@@ -13,33 +13,53 @@
 
 ## 빠른 시작
 
-### 1) 프론트엔드
+### 1) 의존성 설치
 
 ```bash
 pnpm install
+```
+
+### 2) 프론트엔드 실행
+
+```bash
 pnpm dev
 ```
 
 - client: <http://localhost:3000>
 - admin: <http://localhost:3001>
 
-### 2) 서버
+### 3) 서버 실행
 
 ```bash
 cd apps/server
-gradle bootRun
+./gradlew bootRun
 ```
 
-기본 포트: `8080`
+- 기본 포트: `8080`
+- 기본 프로파일: `dev` (PostgreSQL)
+- Flyway 마이그레이션이 자동 실행됩니다.
 
-### 3) PostgreSQL (선택)
+### 4) PostgreSQL 실행
 
 ```bash
 docker compose up -d
 ```
 
-## 다음 작업 권장
+### 5) 서버 테스트 실행(H2)
 
-1. `docs` HTML을 React 컴포넌트로 단계적으로 이관
-2. OpenAPI 기반 타입 생성 파이프라인 추가
-3. 인증/권한(참가자, 운영진) 분리
+```bash
+cd apps/server
+./gradlew test
+```
+
+## 기본 계정
+
+- 관리자: `admin / admin1234`
+- 참가자: `user01 / user1234`
+
+## 현재 구현 범위
+
+- client/admin UI의 API 연동
+- workshop 도메인 CRUD API
+- Spring Data JPA + Flyway 기반 영속화
+- 통합 테스트(H2) 기반 CRUD 검증

@@ -5,10 +5,9 @@ Spring Boot 서버입니다. 환경별 DB는 Spring Profile로 분리합니다.
 ## 실행
 
 ```bash
-gradle bootRun
+./gradlew bootRun
 ```
 
-기본 프로파일은 `local`입니다.
 기본 프로파일은 `dev`입니다.
 
 - `dev`: PostgreSQL
@@ -16,7 +15,15 @@ gradle bootRun
 프로파일 지정 실행:
 
 ```bash
-gradle bootRun --args='--spring.profiles.active=dev'
+./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+
+## 테스트
+
+테스트는 `test` 프로파일(H2 인메모리 DB)에서 실행됩니다.
+
+```bash
+./gradlew test
 ```
 
 ## 환경
@@ -24,6 +31,8 @@ gradle bootRun --args='--spring.profiles.active=dev'
 - Java 17
 - Spring Boot 3.3.x
 - PostgreSQL 16 (dev)
+- H2 (test)
+- Flyway
 
 ## Read API (v1)
 
@@ -50,3 +59,8 @@ gradle bootRun --args='--spring.profiles.active=dev'
 - `DELETE /api/v1/workshop/users/{id}`
 
 OpenAPI 초안: `src/main/resources/openapi/workshop-api.yaml`
+
+## 기본 로그인 계정
+
+- `ADMIN`: `admin / admin1234`
+- `PARTICIPANT`: `user01 / user1234`
