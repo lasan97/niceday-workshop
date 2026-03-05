@@ -13,8 +13,8 @@ public class SessionEntity {
     @Column(length = 64, nullable = false)
     private String id;
 
-    @Column(name = "workshop_team_id", length = 64)
-    private String workshopTeamId;
+    @Column(length = 64, nullable = false)
+    private String team;
 
     @Column(length = 120, nullable = false)
     private String title;
@@ -36,12 +36,12 @@ public class SessionEntity {
         this.id = id;
     }
 
-    public String getWorkshopTeamId() {
-        return workshopTeamId;
+    public String getTeam() {
+        return team;
     }
 
-    public void setWorkshopTeamId(String workshopTeamId) {
-        this.workshopTeamId = workshopTeamId;
+    public void setTeam(String team) {
+        this.team = team;
     }
 
     public String getTitle() {

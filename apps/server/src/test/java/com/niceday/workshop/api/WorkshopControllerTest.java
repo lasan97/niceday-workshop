@@ -109,10 +109,10 @@ class WorkshopControllerTest {
         String sessionId = objectMapper.readTree(
                         mockMvc.perform(post("/api/v1/workshop/sessions")
                                         .contentType(MediaType.APPLICATION_JSON)
-                                        .content(objectMapper.writeValueAsString(
-                                                new SessionPayload("team-alpha", "테스트 세션", "테스트 설명", 40))))
+                                .content(objectMapper.writeValueAsString(
+                                                new SessionPayload("알파팀", "테스트 세션", "테스트 설명", 40))))
                                 .andExpect(status().isCreated())
-                                .andExpect(jsonPath("$.workshopTeamId").value("team-alpha"))
+                                .andExpect(jsonPath("$.team").value("알파팀"))
                                 .andReturn()
                                 .getResponse()
                                 .getContentAsString())
@@ -206,8 +206,8 @@ class WorkshopControllerTest {
         String firstId = objectMapper.readTree(
                         mockMvc.perform(post("/api/v1/workshop/sessions")
                                         .contentType(MediaType.APPLICATION_JSON)
-                                        .content(objectMapper.writeValueAsString(
-                                                new SessionPayload("team-alpha", "A 세션", "설명 A", 30))))
+                                .content(objectMapper.writeValueAsString(
+                                                new SessionPayload("알파팀", "A 세션", "설명 A", 30))))
                                 .andExpect(status().isCreated())
                                 .andReturn()
                                 .getResponse()
@@ -218,8 +218,8 @@ class WorkshopControllerTest {
         String secondId = objectMapper.readTree(
                         mockMvc.perform(post("/api/v1/workshop/sessions")
                                         .contentType(MediaType.APPLICATION_JSON)
-                                        .content(objectMapper.writeValueAsString(
-                                                new SessionPayload("team-beta", "B 세션", "설명 B", 45))))
+                                .content(objectMapper.writeValueAsString(
+                                                new SessionPayload("베타팀", "B 세션", "설명 B", 45))))
                                 .andExpect(status().isCreated())
                                 .andReturn()
                                 .getResponse()
@@ -256,6 +256,53 @@ class WorkshopControllerTest {
     }
 
     @Test
+    void sessionQuestionAndAnswerWork() throws Exception {
+        String sessionId = objectMapper.readTree(
+                        mockMvc.perform(post("/api/v1/workshop/sessions")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(
+                                                new SessionPayload("알파팀", "Q&A 세션", "질의응답 테스트", 20))))
+                                .andExpect(status().isCreated())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString())
+                .get("id")
+                .asText();
+
+        String questionId = objectMapper.readTree(
+                        mockMvc.perform(post("/api/v1/workshop/sessions/{id}/questions", sessionId)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(new SessionQuestionCreatePayload("질문 테스트"))))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.sessionId").value(sessionId))
+                                .andExpect(jsonPath("$.question").value("질문 테스트"))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString())
+                .get("id")
+                .asText();
+
+        mockMvc.perform(patch("/api/v1/workshop/sessions/{sessionId}/questions/{questionId}/answer", sessionId, questionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SessionQuestionAnswerPayload("답변 테스트"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answer").value("답변 테스트"));
+
+        mockMvc.perform(get("/api/v1/workshop/sessions/{id}/questions", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(questionId))
+                .andExpect(jsonPath("$[0].answer").value("답변 테스트"));
+
+        mockMvc.perform(delete("/api/v1/workshop/sessions/{sessionId}/questions/{questionId}", sessionId, questionId))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/workshop/sessions/{id}/questions", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
     void deleteUnknownMissionReturns404() throws Exception {
         mockMvc.perform(delete("/api/v1/workshop/missions/{id}", "mis-unknown"))
                 .andExpect(status().isNotFound())
@@ -282,11 +329,17 @@ class WorkshopControllerTest {
     }
 
     private record SessionPayload(
-            String workshopTeamId,
+            String team,
             String title,
             String description,
             int runningMinutes
     ) {
+    }
+
+    private record SessionQuestionCreatePayload(String question) {
+    }
+
+    private record SessionQuestionAnswerPayload(String answer) {
     }
 
     private record TeamPayload(String name) {

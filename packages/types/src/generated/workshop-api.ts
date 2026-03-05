@@ -619,6 +619,222 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workshop/sessions/{id}/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 세션 질문 목록 조회 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionQuestionResponse"][];
+                    };
+                };
+                /** @description NOT FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** 세션 질문 등록 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SessionQuestionCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description CREATED */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionQuestionResponse"];
+                    };
+                };
+                /** @description BAD REQUEST */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+                /** @description NOT FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workshop/sessions/{sessionId}/questions/{questionId}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** 세션 질문 답변 등록 */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                    questionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SessionQuestionAnswerRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SessionQuestionResponse"];
+                    };
+                };
+                /** @description BAD REQUEST */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+                /** @description FORBIDDEN */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+                /** @description NOT FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/v1/workshop/sessions/{sessionId}/questions/{questionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** 세션 질문 삭제 */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    sessionId: string;
+                    questionId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description NO CONTENT */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description BAD REQUEST */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+                /** @description NOT FOUND */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workshop/users": {
         parameters: {
             query?: never;
@@ -1063,21 +1279,34 @@ export interface components {
         };
         SessionResponse: {
             id: string;
-            workshopTeamId: string;
-            workshopTeamName?: string | null;
+            team: string;
             title: string;
             description: string;
             runningMinutes: number;
             displayOrder: number;
         };
         SessionUpsertRequest: {
-            workshopTeamId: string;
+            team: string;
             title: string;
             description: string;
             runningMinutes: number;
         };
         SessionReorderRequest: {
             orderedIds: string[];
+        };
+        SessionQuestionResponse: {
+            id: string;
+            sessionId: string;
+            question: string;
+            answer?: string | null;
+            /** Format: int64 */
+            createdAt: number;
+        };
+        SessionQuestionCreateRequest: {
+            question: string;
+        };
+        SessionQuestionAnswerRequest: {
+            answer: string;
         };
         UserResponse: {
             id: string;

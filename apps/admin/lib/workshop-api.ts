@@ -23,6 +23,7 @@ type SessionCreateResponse = paths['/api/v1/workshop/sessions']['post']['respons
 type SessionUpdateRequest = paths['/api/v1/workshop/sessions/{id}']['patch']['requestBody']['content']['application/json'];
 type SessionUpdateResponse = paths['/api/v1/workshop/sessions/{id}']['patch']['responses'][200]['content']['application/json'];
 type SessionReorderRequest = paths['/api/v1/workshop/sessions/reorder']['post']['requestBody']['content']['application/json'];
+type SessionQuestionListResponse = paths['/api/v1/workshop/sessions/{id}/questions']['get']['responses'][200]['content']['application/json'];
 
 type UserListResponse = paths['/api/v1/workshop/users']['get']['responses'][200]['content']['application/json'];
 type UserCreateRequest = paths['/api/v1/workshop/users']['post']['requestBody']['content']['application/json'];
@@ -130,6 +131,9 @@ export const workshopApi = {
     sendJson<SessionUpdateResponse>(`/sessions/${id}`, 'PATCH', payload),
   deleteSession: (id: string) => sendJson<void>(`/sessions/${id}`, 'DELETE'),
   reorderSessions: (payload: SessionReorderRequest) => sendJson<void>('/sessions/reorder', 'POST', payload),
+  getSessionQuestions: (sessionId: string) => getJson<SessionQuestionListResponse>(`/sessions/${sessionId}/questions`),
+  deleteSessionQuestion: (sessionId: string, questionId: string) =>
+    sendJson<void>(`/sessions/${sessionId}/questions/${questionId}`, 'DELETE'),
   createUser: (payload: UserCreateRequest) =>
     sendJson<UserCreateResponse>('/users', 'POST', payload),
   updateUser: (id: string, payload: UserUpdateRequest) =>

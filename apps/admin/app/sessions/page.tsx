@@ -1,19 +1,20 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { SessionResponse, TeamResponse } from '@workshop/types';
+import type { SessionResponse } from '@workshop/types';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 import { PageSpinner } from '../components/PageSpinner';
 import { Toast } from '../components/Toast';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
-type SessionFieldKey = 'workshopTeamId' | 'title' | 'description' | 'runningMinutes';
+type SessionFieldKey = 'team' | 'title' | 'description' | 'runningMinutes';
 type SessionFieldErrors = Partial<Record<SessionFieldKey, string>>;
+type SessionQuestion = Awaited<ReturnType<typeof workshopApi.getSessionQuestions>>[number];
 
 type SessionForm = {
   id: string | null;
-  workshopTeamId: string;
+  team: string;
   title: string;
   description: string;
   runningMinutes: number;
@@ -21,7 +22,7 @@ type SessionForm = {
 
 const emptyForm: SessionForm = {
   id: null,
-  workshopTeamId: '',
+  team: '',
   title: '',
   description: '',
   runningMinutes: 30,
@@ -32,13 +33,17 @@ const LONG_PRESS_CANCEL_DISTANCE_PX = 24;
 
 export default function AdminSessionsPage() {
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
-  const [teams, setTeams] = useState<TeamResponse[]>([]);
+  const [userTeams, setUserTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [reorderMode, setReorderMode] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [qaModalSession, setQaModalSession] = useState<SessionResponse | null>(null);
+  const [qaQuestions, setQaQuestions] = useState<SessionQuestion[]>([]);
+  const [qaLoading, setQaLoading] = useState(false);
+  const [qaSubmitting, setQaSubmitting] = useState(false);
   const [form, setForm] = useState<SessionForm>(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<SessionFieldErrors>({});
   const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
@@ -55,14 +60,21 @@ export default function AdminSessionsPage() {
     setSessions(data);
   }
 
-  async function loadTeams() {
-    const data = await workshopApi.getTeams();
-    setTeams(data);
+  async function loadUserTeams() {
+    const users = await workshopApi.getUsers();
+    const teams = Array.from(
+      new Set(
+        users
+          .map((user) => user.team.trim())
+          .filter((teamName) => teamName.length > 0),
+      ),
+    ).sort((a, b) => a.localeCompare(b, 'ko'));
+    setUserTeams(teams);
   }
 
   async function refresh() {
     try {
-      await Promise.all([loadSessions(), loadTeams()]);
+      await Promise.all([loadSessions(), loadUserTeams()]);
     } catch {
       setToast({ type: 'error', message: '세션/팀 조회에 실패했습니다.' });
     } finally {
@@ -107,7 +119,7 @@ export default function AdminSessionsPage() {
 
   function openCreateModal() {
     setFieldErrors({});
-    setForm({ ...emptyForm, workshopTeamId: teams[0]?.id ?? '' });
+    setForm({ ...emptyForm, team: userTeams[0] ?? '미배정' });
     setModalOpen(true);
   }
 
@@ -115,7 +127,7 @@ export default function AdminSessionsPage() {
     setFieldErrors({});
     setForm({
       id: session.id,
-      workshopTeamId: session.workshopTeamId,
+      team: session.team || '미배정',
       title: session.title,
       description: session.description,
       runningMinutes: session.runningMinutes,
@@ -123,10 +135,18 @@ export default function AdminSessionsPage() {
     setModalOpen(true);
   }
 
+  const sessionTeamOptions = Array.from(
+    new Set(
+      ['미배정', ...userTeams, form.team]
+        .map((teamName) => teamName?.trim())
+        .filter((teamName): teamName is string => Boolean(teamName && teamName.length > 0)),
+    ),
+  );
+
   function validateForm(): boolean {
     const errors: SessionFieldErrors = {};
-    if (!form.workshopTeamId.trim()) {
-      errors.workshopTeamId = '워크샵 팀을 선택해주세요.';
+    if (!form.team.trim()) {
+      errors.team = '팀을 선택해주세요.';
     }
     if (!form.title.trim()) {
       errors.title = '제목을 입력해주세요.';
@@ -151,7 +171,7 @@ export default function AdminSessionsPage() {
     setToast(null);
     try {
       const payload = {
-        workshopTeamId: form.workshopTeamId,
+        team: form.team,
         title: form.title,
         description: form.description,
         runningMinutes: form.runningMinutes,
@@ -198,6 +218,45 @@ export default function AdminSessionsPage() {
       });
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function openQaModal(session: SessionResponse) {
+    setQaModalSession(session);
+    setQaLoading(true);
+    setToast(null);
+    try {
+      const data = await workshopApi.getSessionQuestions(session.id);
+      setQaQuestions(data);
+    } catch (error) {
+      setQaQuestions([]);
+      setToast({
+        type: 'error',
+        message: error instanceof ApiRequestError ? error.message : 'Q&A 조회에 실패했습니다.',
+      });
+    } finally {
+      setQaLoading(false);
+    }
+  }
+
+  async function handleDeleteQuestion(questionId: string) {
+    if (!qaModalSession || qaSubmitting) {
+      return;
+    }
+    setQaSubmitting(true);
+    setToast(null);
+    try {
+      await workshopApi.deleteSessionQuestion(qaModalSession.id, questionId);
+      const data = await workshopApi.getSessionQuestions(qaModalSession.id);
+      setQaQuestions(data);
+      setToast({ type: 'success', message: '질문을 삭제했습니다.' });
+    } catch (error) {
+      setToast({
+        type: 'error',
+        message: error instanceof ApiRequestError ? error.message : '질문 삭제에 실패했습니다.',
+      });
+    } finally {
+      setQaSubmitting(false);
     }
   }
 
@@ -539,7 +598,7 @@ export default function AdminSessionsPage() {
               <div className="p-4">
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
-                    {item.workshopTeamName ?? '미배정'}
+                    {item.team}
                   </span>
                   <span
                     className={`select-none rounded-full border px-2 py-1 text-[10px] font-semibold ${
@@ -562,7 +621,7 @@ export default function AdminSessionsPage() {
                 <p className="mt-2 text-xs font-semibold text-slate-600">러닝타임 {item.runningMinutes}분</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
+              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
                 <button
                   type="button"
                   className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
@@ -570,6 +629,16 @@ export default function AdminSessionsPage() {
                   onClick={() => openEditModal(item)}
                 >
                   편집
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-sky-200 bg-sky-50 py-1 text-[10px] font-semibold text-sky-700"
+                  disabled={submitting || reorderMode}
+                  onClick={() => {
+                    void openQaModal(item);
+                  }}
+                >
+                  Q&A
                 </button>
                 <button
                   type="button"
@@ -602,27 +671,26 @@ export default function AdminSessionsPage() {
             </div>
 
             <div className="mt-3 space-y-2">
-              <label className="text-[10px] font-semibold text-slate-500">워크샵 팀</label>
+              <label className="text-[10px] font-semibold text-slate-500">팀</label>
               <select
                 className={`w-full rounded border px-2 py-2 text-xs ${
-                  fieldErrors.workshopTeamId ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                  fieldErrors.team ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
                 }`}
-                value={form.workshopTeamId}
+                value={form.team}
                 disabled={submitting}
                 onChange={(event) => {
-                  setFieldErrors((prev) => ({ ...prev, workshopTeamId: undefined }));
-                  setForm((prev) => ({ ...prev, workshopTeamId: event.target.value }));
+                  setFieldErrors((prev) => ({ ...prev, team: undefined }));
+                  setForm((prev) => ({ ...prev, team: event.target.value }));
                 }}
               >
-                <option value="">선택하세요</option>
-                {teams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
+                {sessionTeamOptions.map((teamName) => (
+                  <option key={teamName} value={teamName}>
+                    {teamName}
                   </option>
                 ))}
               </select>
-              {fieldErrors.workshopTeamId ? (
-                <p className="text-[10px] font-semibold text-red-600">{fieldErrors.workshopTeamId}</p>
+              {fieldErrors.team ? (
+                <p className="text-[10px] font-semibold text-red-600">{fieldErrors.team}</p>
               ) : null}
 
               <label className="text-[10px] font-semibold text-slate-500">제목</label>
@@ -694,6 +762,61 @@ export default function AdminSessionsPage() {
               >
                 저장
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {qaModalSession ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400">{qaModalSession.team}</p>
+                <h3 className="text-sm font-bold text-slate-900">{qaModalSession.title} Q&A</h3>
+              </div>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => setQaModalSession(null)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-3 max-h-96 space-y-2 overflow-y-auto">
+              {qaLoading ? <PageSpinner label="Q&A를 불러오는 중..." /> : null}
+              {!qaLoading && qaQuestions.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-5 text-center text-xs text-slate-500">
+                  등록된 질문이 없습니다.
+                </p>
+              ) : null}
+              {!qaLoading
+                ? qaQuestions.map((question) => (
+                    <article key={question.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-[11px] font-bold text-slate-500">Q.</p>
+                      <p className="whitespace-pre-line text-xs font-semibold text-slate-800">{question.question}</p>
+                      {question.answer ? (
+                        <>
+                          <p className="mt-1 text-[11px] font-bold text-slate-500">A.</p>
+                          <p className="whitespace-pre-line text-xs text-slate-600">{question.answer}</p>
+                        </>
+                      ) : (
+                        <p className="mt-1 text-xs text-slate-500">답변 대기</p>
+                      )}
+                      <button
+                        type="button"
+                        className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-600 disabled:opacity-50"
+                        disabled={qaSubmitting}
+                        onClick={() => {
+                          void handleDeleteQuestion(question.id);
+                        }}
+                      >
+                        삭제
+                      </button>
+                    </article>
+                  ))
+                : null}
             </div>
           </div>
         </div>

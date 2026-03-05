@@ -33,8 +33,7 @@ export default function ClientHomePage() {
         });
         setCurrentSession({
           id: 'ses-empty',
-          workshopTeamId: '',
-          workshopTeamName: '미배정',
+          team: '미배정',
           title: '진행 중인 세션이 없습니다.',
           description: '-',
           runningMinutes: 0,

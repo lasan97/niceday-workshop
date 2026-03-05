@@ -314,6 +314,137 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/sessions/{id}/questions:
+    get:
+      summary: 세션 질문 목록 조회
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionQuestionResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+    post:
+      summary: 세션 질문 등록
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionQuestionCreateRequest'
+      responses:
+        '201':
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionQuestionResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/sessions/{sessionId}/questions/{questionId}/answer:
+    patch:
+      summary: 세션 질문 답변 등록
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionQuestionAnswerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionQuestionResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '403':
+          description: FORBIDDEN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/sessions/{sessionId}/questions/{questionId}:
+    delete:
+      summary: 세션 질문 삭제
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: NO CONTENT
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/users:
     get:
       summary: 사용자 목록 조회
@@ -590,23 +721,20 @@ components:
       type: object
       properties:
         id: { type: string }
-        workshopTeamId: { type: string }
-        workshopTeamName:
-          type: string
-          nullable: true
+        team: { type: string }
         title: { type: string }
         description: { type: string }
         runningMinutes: { type: integer }
         displayOrder: { type: integer }
-      required: [id, workshopTeamId, title, description, runningMinutes, displayOrder]
+      required: [id, team, title, description, runningMinutes, displayOrder]
     SessionUpsertRequest:
       type: object
       properties:
-        workshopTeamId: { type: string }
+        team: { type: string }
         title: { type: string }
         description: { type: string }
         runningMinutes: { type: integer }
-      required: [workshopTeamId, title, description, runningMinutes]
+      required: [team, title, description, runningMinutes]
     SessionReorderRequest:
       type: object
       properties:
@@ -615,6 +743,27 @@ components:
           items:
             type: string
       required: [orderedIds]
+    SessionQuestionResponse:
+      type: object
+      properties:
+        id: { type: string }
+        sessionId: { type: string }
+        question: { type: string }
+        answer:
+          type: string
+          nullable: true
+        createdAt: { type: integer, format: int64 }
+      required: [id, sessionId, question, createdAt]
+    SessionQuestionCreateRequest:
+      type: object
+      properties:
+        question: { type: string }
+      required: [question]
+    SessionQuestionAnswerRequest:
+      type: object
+      properties:
+        answer: { type: string }
+      required: [answer]
     UserResponse:
       type: object
       properties:

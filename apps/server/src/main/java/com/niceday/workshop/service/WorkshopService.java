@@ -5,6 +5,9 @@ import com.niceday.workshop.api.dto.MissionUpsertRequest;
 import com.niceday.workshop.api.dto.OverviewResponse;
 import com.niceday.workshop.api.dto.ScheduleItemResponse;
 import com.niceday.workshop.api.dto.ScheduleUpsertRequest;
+import com.niceday.workshop.api.dto.SessionQuestionAnswerRequest;
+import com.niceday.workshop.api.dto.SessionQuestionCreateRequest;
+import com.niceday.workshop.api.dto.SessionQuestionResponse;
 import com.niceday.workshop.api.dto.SessionResponse;
 import com.niceday.workshop.api.dto.SessionReorderRequest;
 import com.niceday.workshop.api.dto.SessionUpsertRequest;
@@ -16,11 +19,13 @@ import com.niceday.workshop.domain.AuthAccountEntity;
 import com.niceday.workshop.domain.MissionEntity;
 import com.niceday.workshop.domain.ScheduleEntity;
 import com.niceday.workshop.domain.SessionEntity;
+import com.niceday.workshop.domain.SessionQuestionEntity;
 import com.niceday.workshop.domain.TeamEntity;
 import com.niceday.workshop.domain.UserEntity;
 import com.niceday.workshop.repository.AuthAccountRepository;
 import com.niceday.workshop.repository.MissionRepository;
 import com.niceday.workshop.repository.ScheduleRepository;
+import com.niceday.workshop.repository.SessionQuestionRepository;
 import com.niceday.workshop.repository.SessionRepository;
 import com.niceday.workshop.repository.TeamRepository;
 import com.niceday.workshop.repository.UserRepository;
@@ -43,6 +48,7 @@ public class WorkshopService {
     private final ScheduleRepository scheduleRepository;
     private final MissionRepository missionRepository;
     private final SessionRepository sessionRepository;
+    private final SessionQuestionRepository sessionQuestionRepository;
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final AuthAccountRepository authAccountRepository;
@@ -51,6 +57,7 @@ public class WorkshopService {
             ScheduleRepository scheduleRepository,
             MissionRepository missionRepository,
             SessionRepository sessionRepository,
+            SessionQuestionRepository sessionQuestionRepository,
             UserRepository userRepository,
             TeamRepository teamRepository,
             AuthAccountRepository authAccountRepository
@@ -58,6 +65,7 @@ public class WorkshopService {
         this.scheduleRepository = scheduleRepository;
         this.missionRepository = missionRepository;
         this.sessionRepository = sessionRepository;
+        this.sessionQuestionRepository = sessionQuestionRepository;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
         this.authAccountRepository = authAccountRepository;
@@ -133,43 +141,28 @@ public class WorkshopService {
 
     @Transactional(readOnly = true)
     public List<SessionResponse> getSessions() {
-        Map<String, String> teamNames = teamRepository.findAll().stream()
-                .collect(Collectors.toMap(TeamEntity::getId, TeamEntity::getName));
-
         return sessionRepository.findAll().stream()
                 .sorted((a, b) -> Integer.compare(a.getDisplayOrder(), b.getDisplayOrder()))
-                .map((session) -> toSessionResponse(session, teamNames))
+                .map(this::toSessionResponse)
                 .toList();
     }
 
     @Transactional
     public SessionResponse createSession(SessionUpsertRequest request) {
-        if (!teamRepository.existsById(request.workshopTeamId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "워크샵 팀을 찾을 수 없습니다.");
-        }
-
         String id = nextId("ses");
         SessionEntity entity = new SessionEntity();
         entity.setId(id);
         entity.setDisplayOrder(nextSessionDisplayOrder());
         applySessionRequest(entity, request);
-        Map<String, String> teamNames = teamRepository.findAll().stream()
-                .collect(Collectors.toMap(TeamEntity::getId, TeamEntity::getName));
-        return toSessionResponse(sessionRepository.save(entity), teamNames);
+        return toSessionResponse(sessionRepository.save(entity));
     }
 
     @Transactional
     public SessionResponse updateSession(String id, SessionUpsertRequest request) {
-        if (!teamRepository.existsById(request.workshopTeamId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "워크샵 팀을 찾을 수 없습니다.");
-        }
-
         SessionEntity entity = sessionRepository.findById(id)
                 .orElseThrow(() -> notFound("세션을 찾을 수 없습니다."));
         applySessionRequest(entity, request);
-        Map<String, String> teamNames = teamRepository.findAll().stream()
-                .collect(Collectors.toMap(TeamEntity::getId, TeamEntity::getName));
-        return toSessionResponse(sessionRepository.save(entity), teamNames);
+        return toSessionResponse(sessionRepository.save(entity));
     }
 
     @Transactional
@@ -198,6 +191,83 @@ public class WorkshopService {
             session.setDisplayOrder(index + 1);
         }
         sessionRepository.saveAll(sessions);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SessionQuestionResponse> getSessionQuestions(String sessionId) {
+        if (!sessionRepository.existsById(sessionId)) {
+            throw notFound("세션을 찾을 수 없습니다.");
+        }
+
+        return sessionQuestionRepository.findBySessionIdOrderByCreatedAtDesc(sessionId).stream()
+                .map(this::toSessionQuestionResponse)
+                .toList();
+    }
+
+    @Transactional
+    public SessionQuestionResponse createSessionQuestion(String sessionId, SessionQuestionCreateRequest request) {
+        if (!sessionRepository.existsById(sessionId)) {
+            throw notFound("세션을 찾을 수 없습니다.");
+        }
+
+        SessionQuestionEntity entity = new SessionQuestionEntity();
+        entity.setId(nextId("q"));
+        entity.setSessionId(sessionId);
+        entity.setQuestion(request.question());
+        entity.setAnswer(null);
+        entity.setCreatedAt(System.currentTimeMillis());
+        return toSessionQuestionResponse(sessionQuestionRepository.save(entity));
+    }
+
+    @Transactional
+    public SessionQuestionResponse answerSessionQuestion(String sessionId, String questionId, SessionQuestionAnswerRequest request) {
+        return answerSessionQuestion(sessionId, questionId, request, null, null);
+    }
+
+    @Transactional
+    public SessionQuestionResponse answerSessionQuestion(
+            String sessionId,
+            String questionId,
+            SessionQuestionAnswerRequest request,
+            String actorUsername,
+            String actorRole
+    ) {
+        if (!sessionRepository.existsById(sessionId)) {
+            throw notFound("세션을 찾을 수 없습니다.");
+        }
+
+        SessionQuestionEntity entity = sessionQuestionRepository.findById(questionId)
+                .orElseThrow(() -> notFound("질문을 찾을 수 없습니다."));
+        if (!sessionId.equals(entity.getSessionId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "질문과 세션 정보가 일치하지 않습니다.");
+        }
+
+        if (!"ADMIN".equals(actorRole)) {
+            SessionEntity session = sessionRepository.findById(sessionId)
+                    .orElseThrow(() -> notFound("세션을 찾을 수 없습니다."));
+            String actorTeam = resolveUserTeamByUsername(actorUsername);
+            if (!session.getTeam().equals(actorTeam)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "세션 팀 사용자만 답변할 수 있습니다.");
+            }
+        }
+
+        entity.setAnswer(request.answer());
+        return toSessionQuestionResponse(sessionQuestionRepository.save(entity));
+    }
+
+    @Transactional
+    public void deleteSessionQuestion(String sessionId, String questionId) {
+        if (!sessionRepository.existsById(sessionId)) {
+            throw notFound("세션을 찾을 수 없습니다.");
+        }
+
+        SessionQuestionEntity entity = sessionQuestionRepository.findById(questionId)
+                .orElseThrow(() -> notFound("질문을 찾을 수 없습니다."));
+        if (!sessionId.equals(entity.getSessionId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "질문과 세션 정보가 일치하지 않습니다.");
+        }
+
+        sessionQuestionRepository.deleteById(questionId);
     }
 
     @Transactional(readOnly = true)
@@ -357,7 +427,7 @@ public class WorkshopService {
     }
 
     private void applySessionRequest(SessionEntity entity, SessionUpsertRequest request) {
-        entity.setWorkshopTeamId(request.workshopTeamId());
+        entity.setTeam(request.team());
         entity.setTitle(request.title());
         entity.setDescription(request.description());
         entity.setRunningMinutes(request.runningMinutes());
@@ -412,15 +482,24 @@ public class WorkshopService {
         );
     }
 
-    private SessionResponse toSessionResponse(SessionEntity entity, Map<String, String> teamNames) {
+    private SessionResponse toSessionResponse(SessionEntity entity) {
         return new SessionResponse(
                 entity.getId(),
-                entity.getWorkshopTeamId(),
-                entity.getWorkshopTeamId() == null ? null : teamNames.get(entity.getWorkshopTeamId()),
+                entity.getTeam() == null || entity.getTeam().isBlank() ? "미배정" : entity.getTeam(),
                 entity.getTitle(),
                 entity.getDescription(),
                 entity.getRunningMinutes(),
                 entity.getDisplayOrder()
+        );
+    }
+
+    private SessionQuestionResponse toSessionQuestionResponse(SessionQuestionEntity entity) {
+        return new SessionQuestionResponse(
+                entity.getId(),
+                entity.getSessionId(),
+                entity.getQuestion(),
+                entity.getAnswer(),
+                entity.getCreatedAt()
         );
     }
 
@@ -446,6 +525,18 @@ public class WorkshopService {
                 entity.getDepartment(),
                 entity.getRole()
         );
+    }
+
+    private String resolveUserTeamByUsername(String username) {
+        if (username == null || username.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+
+        AuthAccountEntity account = authAccountRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 계정을 찾을 수 없습니다."));
+        UserEntity user = userRepository.findById(account.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자 정보를 찾을 수 없습니다."));
+        return user.getTeam();
     }
 
     private ResponseStatusException notFound(String message) {

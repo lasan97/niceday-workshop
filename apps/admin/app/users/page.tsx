@@ -20,6 +20,7 @@ type UserForm = {
 type UserFieldKey = 'username' | 'name' | 'team' | 'workshopTeamId' | 'role';
 type UserFieldErrors = Partial<Record<UserFieldKey, string>>;
 type ToastState = { type: 'success' | 'error'; message: string } | null;
+type UserTeamDraft = { original: string; name: string };
 
 const emptyForm: UserForm = {
   id: null,
@@ -38,6 +39,8 @@ export default function AdminUsersPage() {
   const [toast, setToast] = useState<ToastState>(null);
   const [search, setSearch] = useState('');
 
+  const [teamCardOpen, setTeamCardOpen] = useState(true);
+
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [userForm, setUserForm] = useState<UserForm>(emptyForm);
   const [userFieldErrors, setUserFieldErrors] = useState<UserFieldErrors>({});
@@ -45,6 +48,9 @@ export default function AdminUsersPage() {
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [teamDrafts, setTeamDrafts] = useState<TeamResponse[]>([]);
   const [newTeamName, setNewTeamName] = useState('');
+
+  const [userTeamModalOpen, setUserTeamModalOpen] = useState(false);
+  const [userTeamDrafts, setUserTeamDrafts] = useState<UserTeamDraft[]>([]);
 
   async function loadUsers() {
     try {
@@ -70,6 +76,16 @@ export default function AdminUsersPage() {
     void Promise.all([loadUsers(), loadTeams()]).finally(() => setLoading(false));
   }, []);
 
+  const userTeams = useMemo(() => {
+    return Array.from(
+      new Set(
+        users
+          .map((user) => user.team.trim())
+          .filter((teamName) => teamName.length > 0),
+      ),
+    ).sort((a, b) => a.localeCompare(b, 'ko'));
+  }, [users]);
+
   function openCreateUserModal() {
     setUserFieldErrors({});
     setUserForm(emptyForm);
@@ -93,6 +109,11 @@ export default function AdminUsersPage() {
     setTeamDrafts(teams);
     setNewTeamName('');
     setTeamModalOpen(true);
+  }
+
+  function openUserTeamModal() {
+    setUserTeamDrafts(userTeams.map((teamName) => ({ original: teamName, name: teamName })));
+    setUserTeamModalOpen(true);
   }
 
   function validateUserForm(): boolean {
@@ -271,6 +292,78 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function handleSaveUserTeam(draft: UserTeamDraft) {
+    const nextTeamName = draft.name.trim();
+    if (submitting || !nextTeamName || draft.original === nextTeamName) {
+      return;
+    }
+
+    const affectedUsers = users.filter((user) => user.team === draft.original);
+    if (affectedUsers.length === 0) {
+      return;
+    }
+
+    setSubmitting(true);
+    setToast(null);
+    try {
+      await Promise.all(
+        affectedUsers.map((user) =>
+          workshopApi.updateUser(user.id, {
+            username: user.username,
+            name: user.name,
+            team: nextTeamName,
+            workshopTeamId: user.workshopTeamId ?? null,
+            role: user.role,
+          }),
+        ),
+      );
+      await loadUsers();
+      setUserTeamDrafts((prev) => prev.map((item) => (item.original === draft.original ? { original: nextTeamName, name: nextTeamName } : item)));
+      setToast({ type: 'success', message: '사용자 팀명을 일괄 변경했습니다.' });
+    } catch (error) {
+      setToast({
+        type: 'error',
+        message: error instanceof ApiRequestError ? error.message : '사용자 팀 변경에 실패했습니다.',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteUserTeam(teamName: string) {
+    if (submitting) {
+      return;
+    }
+
+    const affectedUsers = users.filter((user) => user.team === teamName);
+
+    setSubmitting(true);
+    setToast(null);
+    try {
+      await Promise.all(
+        affectedUsers.map((user) =>
+          workshopApi.updateUser(user.id, {
+            username: user.username,
+            name: user.name,
+            team: '미배정',
+            workshopTeamId: user.workshopTeamId ?? null,
+            role: user.role,
+          }),
+        ),
+      );
+      await loadUsers();
+      setUserTeamDrafts((prev) => prev.filter((item) => item.original !== teamName));
+      setToast({ type: 'success', message: '사용자 팀을 삭제하고 미배정으로 변경했습니다.' });
+    } catch (error) {
+      setToast({
+        type: 'error',
+        message: error instanceof ApiRequestError ? error.message : '사용자 팀 삭제에 실패했습니다.',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   const filteredUsers = useMemo(() => {
     if (!search.trim()) {
       return users;
@@ -308,30 +401,69 @@ export default function AdminUsersPage() {
         <div className="space-y-4">
           <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-800">워크샵 팀 관리</h2>
+              <h2 className="text-sm font-bold text-slate-800">팀 관리</h2>
               <button
                 type="button"
                 className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
-                disabled={submitting}
-                onClick={openTeamModal}
+                onClick={() => setTeamCardOpen((prev) => !prev)}
               >
-                편집
+                {teamCardOpen ? '접기' : '펼치기'}
               </button>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {teams.length === 0 ? (
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">등록된 팀 없음</span>
-              ) : (
-                teams.map((team) => (
-                  <span
-                    key={team.id}
-                    className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700"
-                  >
-                    {team.name}
-                  </span>
-                ))
-              )}
-            </div>
+
+            {teamCardOpen ? (
+              <div className="mt-3 space-y-3">
+                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-800">사용자 팀 관리</h3>
+                    <button
+                      type="button"
+                      className="rounded border border-slate-300 px-2 py-1 text-[10px] font-semibold text-slate-700"
+                      disabled={submitting}
+                      onClick={openUserTeamModal}
+                    >
+                      편집
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {userTeams.length === 0 ? (
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500">등록된 사용자 팀 없음</span>
+                    ) : (
+                      userTeams.map((teamName) => (
+                        <span key={teamName} className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
+                          {teamName}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-800">워크샵 팀 관리</h3>
+                    <button
+                      type="button"
+                      className="rounded border border-slate-300 px-2 py-1 text-[10px] font-semibold text-slate-700"
+                      disabled={submitting}
+                      onClick={openTeamModal}
+                    >
+                      편집
+                    </button>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {teams.length === 0 ? (
+                      <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-500">등록된 워크샵 팀 없음</span>
+                    ) : (
+                      teams.map((team) => (
+                        <span key={team.id} className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+                          {team.name}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </section>
 
           <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -350,8 +482,10 @@ export default function AdminUsersPage() {
                 <div className="p-4">
                   <h3 className="text-sm font-bold text-slate-900">{user.name}</h3>
                   <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
-                  <p className="mt-2 text-xs text-slate-500">팀: {user.team}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700">
+                      {user.team || '미배정'}
+                    </span>
                     <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
                       {user.workshopTeamName ?? '미배정'}
                     </span>
@@ -423,9 +557,7 @@ export default function AdminUsersPage() {
                   setUserForm((prev) => ({ ...prev, username: event.target.value }));
                 }}
               />
-              {userFieldErrors.username ? (
-                <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.username}</p>
-              ) : null}
+              {userFieldErrors.username ? <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.username}</p> : null}
 
               <label className="text-[10px] font-semibold text-slate-500">이름</label>
               <input
@@ -442,7 +574,7 @@ export default function AdminUsersPage() {
               {userFieldErrors.name ? <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.name}</p> : null}
 
               <label className="text-[10px] font-semibold text-slate-500">팀</label>
-              <input
+              <select
                 className={`w-full rounded border px-2 py-2 text-xs ${
                   userFieldErrors.team ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
                 }`}
@@ -452,7 +584,14 @@ export default function AdminUsersPage() {
                   setUserFieldErrors((prev) => ({ ...prev, team: undefined }));
                   setUserForm((prev) => ({ ...prev, team: event.target.value }));
                 }}
-              />
+              >
+                <option value="미배정">미배정</option>
+                {userTeams.map((teamName) => (
+                  <option key={teamName} value={teamName}>
+                    {teamName}
+                  </option>
+                ))}
+              </select>
               {userFieldErrors.team ? <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.team}</p> : null}
 
               <label className="text-[10px] font-semibold text-slate-500">워크샵 팀</label>
@@ -556,9 +695,7 @@ export default function AdminUsersPage() {
                     value={team.name}
                     disabled={submitting}
                     onChange={(event) => {
-                      setTeamDrafts((prev) =>
-                        prev.map((item) => (item.id === team.id ? { ...item, name: event.target.value } : item)),
-                      );
+                      setTeamDrafts((prev) => prev.map((item) => (item.id === team.id ? { ...item, name: event.target.value } : item)));
                     }}
                   />
                   <button
@@ -583,6 +720,65 @@ export default function AdminUsersPage() {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {userTeamModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-sm font-bold text-slate-900">사용자 팀 편집</h3>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => setUserTeamModalOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {userTeamDrafts.length === 0 ? (
+                <p className="rounded border border-dashed border-slate-300 bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
+                  등록된 사용자 팀이 없습니다.
+                </p>
+              ) : (
+                userTeamDrafts.map((draft) => (
+                  <div key={draft.original} className="flex items-center gap-2">
+                    <input
+                      className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs"
+                      value={draft.name}
+                      disabled={submitting}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        setUserTeamDrafts((prev) => prev.map((item) => (item.original === draft.original ? { ...item, name: next } : item)));
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="rounded border border-slate-300 px-2 py-1 text-[10px] font-semibold"
+                      disabled={submitting}
+                      onClick={() => {
+                        void handleSaveUserTeam(draft);
+                      }}
+                    >
+                      저장
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-600"
+                      disabled={submitting}
+                      onClick={() => {
+                        void handleDeleteUserTeam(draft.original);
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

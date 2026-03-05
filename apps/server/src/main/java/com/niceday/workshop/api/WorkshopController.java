@@ -1,10 +1,14 @@
 package com.niceday.workshop.api;
 
+import com.niceday.workshop.auth.WorkshopAuthInterceptor;
 import com.niceday.workshop.api.dto.MissionResponse;
 import com.niceday.workshop.api.dto.MissionUpsertRequest;
 import com.niceday.workshop.api.dto.OverviewResponse;
 import com.niceday.workshop.api.dto.ScheduleItemResponse;
 import com.niceday.workshop.api.dto.ScheduleUpsertRequest;
+import com.niceday.workshop.api.dto.SessionQuestionAnswerRequest;
+import com.niceday.workshop.api.dto.SessionQuestionCreateRequest;
+import com.niceday.workshop.api.dto.SessionQuestionResponse;
 import com.niceday.workshop.api.dto.SessionResponse;
 import com.niceday.workshop.api.dto.SessionReorderRequest;
 import com.niceday.workshop.api.dto.SessionUpsertRequest;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/v1/workshop")
@@ -112,6 +117,41 @@ public class WorkshopController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void reorderSessions(@Valid @RequestBody SessionReorderRequest request) {
         workshopService.reorderSessions(request);
+    }
+
+    @GetMapping("/sessions/{id}/questions")
+    public List<SessionQuestionResponse> getSessionQuestions(@PathVariable String id) {
+        return workshopService.getSessionQuestions(id);
+    }
+
+    @PostMapping("/sessions/{id}/questions")
+    @ResponseStatus(HttpStatus.CREATED)
+    public SessionQuestionResponse createSessionQuestion(
+            @PathVariable String id,
+            @Valid @RequestBody SessionQuestionCreateRequest request
+    ) {
+        return workshopService.createSessionQuestion(id, request);
+    }
+
+    @PatchMapping("/sessions/{sessionId}/questions/{questionId}/answer")
+    public SessionQuestionResponse answerSessionQuestion(
+            @PathVariable String sessionId,
+            @PathVariable String questionId,
+            HttpServletRequest httpRequest,
+            @Valid @RequestBody SessionQuestionAnswerRequest request
+    ) {
+        String username = (String) httpRequest.getAttribute(WorkshopAuthInterceptor.AUTH_USERNAME_ATTR);
+        String role = (String) httpRequest.getAttribute(WorkshopAuthInterceptor.AUTH_ROLE_ATTR);
+        return workshopService.answerSessionQuestion(sessionId, questionId, request, username, role);
+    }
+
+    @DeleteMapping("/sessions/{sessionId}/questions/{questionId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSessionQuestion(
+            @PathVariable String sessionId,
+            @PathVariable String questionId
+    ) {
+        workshopService.deleteSessionQuestion(sessionId, questionId);
     }
 
     @GetMapping("/users")
