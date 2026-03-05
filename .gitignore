@@ -1,0 +1,22 @@
+# node
+node_modules
+.pnpm-store
+.turbo
+.next
+out
+dist
+coverage
+
+# java
+.gradle
+build
+**/build
+
+# env
+.env
+.env.*
+
+# misc
+.DS_Store
+.idea
+.vscode
