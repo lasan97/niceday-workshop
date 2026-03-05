@@ -37,10 +37,14 @@ export default function AdminUsersPage() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [search, setSearch] = useState('');
+
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userForm, setUserForm] = useState<UserForm>(emptyForm);
+  const [userFieldErrors, setUserFieldErrors] = useState<UserFieldErrors>({});
+
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const [teamDrafts, setTeamDrafts] = useState<TeamResponse[]>([]);
   const [newTeamName, setNewTeamName] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState<UserForm>(emptyForm);
-  const [fieldErrors, setFieldErrors] = useState<UserFieldErrors>({});
 
   async function loadUsers() {
     try {
@@ -51,12 +55,14 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function loadTeams() {
+  async function loadTeams(): Promise<TeamResponse[]> {
     try {
       const data = await workshopApi.getTeams();
       setTeams(data);
+      return data;
     } catch {
       setToast({ type: 'error', message: '워크샵 팀 조회에 실패했습니다.' });
+      return [];
     }
   }
 
@@ -64,15 +70,15 @@ export default function AdminUsersPage() {
     void Promise.all([loadUsers(), loadTeams()]).finally(() => setLoading(false));
   }, []);
 
-  function openCreateModal() {
-    setFieldErrors({});
-    setForm(emptyForm);
-    setModalOpen(true);
+  function openCreateUserModal() {
+    setUserFieldErrors({});
+    setUserForm(emptyForm);
+    setUserModalOpen(true);
   }
 
-  function openEditModal(user: UserRow) {
-    setFieldErrors({});
-    setForm({
+  function openEditUserModal(user: UserRow) {
+    setUserFieldErrors({});
+    setUserForm({
       id: user.id,
       username: user.username,
       name: user.name,
@@ -80,31 +86,37 @@ export default function AdminUsersPage() {
       workshopTeamId: user.workshopTeamId ?? null,
       role: user.role,
     });
-    setModalOpen(true);
+    setUserModalOpen(true);
   }
 
-  function validateForm(): boolean {
+  function openTeamModal() {
+    setTeamDrafts(teams);
+    setNewTeamName('');
+    setTeamModalOpen(true);
+  }
+
+  function validateUserForm(): boolean {
     const errors: UserFieldErrors = {};
 
-    if (!form.username.trim()) {
+    if (!userForm.username.trim()) {
       errors.username = '아이디를 입력해주세요.';
     }
-    if (!form.name.trim()) {
+    if (!userForm.name.trim()) {
       errors.name = '이름을 입력해주세요.';
     }
-    if (!form.team.trim()) {
+    if (!userForm.team.trim()) {
       errors.team = '팀을 입력해주세요.';
     }
-    if (!form.role.trim()) {
+    if (!userForm.role.trim()) {
       errors.role = '권한을 선택해주세요.';
     }
 
-    setFieldErrors(errors);
+    setUserFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
 
   async function handleSaveUser() {
-    if (submitting || !validateForm()) {
+    if (submitting || !validateUserForm()) {
       return;
     }
 
@@ -112,26 +124,26 @@ export default function AdminUsersPage() {
     setToast(null);
     try {
       const payload = {
-        username: form.username,
-        name: form.name,
-        team: form.team,
-        workshopTeamId: form.workshopTeamId,
-        role: form.role,
+        username: userForm.username,
+        name: userForm.name,
+        team: userForm.team,
+        workshopTeamId: userForm.workshopTeamId,
+        role: userForm.role,
       };
 
-      if (form.id) {
-        await workshopApi.updateUser(form.id, payload);
+      if (userForm.id) {
+        await workshopApi.updateUser(userForm.id, payload);
         setToast({ type: 'success', message: '사용자 정보를 저장했습니다.' });
       } else {
         await workshopApi.createUser(payload);
         setToast({ type: 'success', message: '사용자를 추가했습니다. 초기 비밀번호는 1111 입니다.' });
       }
 
-      setModalOpen(false);
+      setUserModalOpen(false);
       await loadUsers();
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        setFieldErrors(error.fieldErrors as UserFieldErrors);
+        setUserFieldErrors(error.fieldErrors as UserFieldErrors);
       }
       setToast({
         type: 'error',
@@ -193,7 +205,11 @@ export default function AdminUsersPage() {
     try {
       await workshopApi.createTeam({ name: newTeamName.trim() });
       setNewTeamName('');
-      await loadTeams();
+      const nextTeams = await loadTeams();
+      await loadUsers();
+      if (teamModalOpen) {
+        setTeamDrafts(nextTeams);
+      }
       setToast({ type: 'success', message: '워크샵 팀을 추가했습니다.' });
     } catch (error) {
       setToast({
@@ -214,7 +230,11 @@ export default function AdminUsersPage() {
     setToast(null);
     try {
       await workshopApi.updateTeam(team.id, { name: team.name.trim() });
-      await Promise.all([loadTeams(), loadUsers()]);
+      const nextTeams = await loadTeams();
+      await loadUsers();
+      if (teamModalOpen) {
+        setTeamDrafts(nextTeams);
+      }
       setToast({ type: 'success', message: '워크샵 팀을 저장했습니다.' });
     } catch (error) {
       setToast({
@@ -235,7 +255,11 @@ export default function AdminUsersPage() {
     setToast(null);
     try {
       await workshopApi.deleteTeam(teamId);
-      await Promise.all([loadTeams(), loadUsers()]);
+      const nextTeams = await loadTeams();
+      await loadUsers();
+      if (teamModalOpen) {
+        setTeamDrafts(nextTeams);
+      }
       setToast({ type: 'success', message: '워크샵 팀을 삭제했습니다.' });
     } catch (error) {
       setToast({
@@ -256,6 +280,12 @@ export default function AdminUsersPage() {
     return users.filter((user) => `${user.username}${user.name}${user.team}${user.workshopTeamName ?? ''}`.includes(keyword));
   }, [search, users]);
 
+  function roleBadgeClass(role: string): string {
+    return role === 'ADMIN'
+      ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+      : 'bg-emerald-100 text-emerald-700 border-emerald-200';
+  }
+
   return (
     <AdminScreen
       title="사용자 관리"
@@ -265,7 +295,7 @@ export default function AdminUsersPage() {
           type="button"
           className="rounded-full bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
           disabled={submitting}
-          onClick={openCreateModal}
+          onClick={openCreateUserModal}
         >
           + 사용자
         </button>
@@ -273,137 +303,108 @@ export default function AdminUsersPage() {
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
       {loading ? <PageSpinner label="사용자 데이터를 불러오는 중..." /> : null}
+
       {!loading ? (
-      <div className="space-y-4">
-        <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-          <h2 className="text-xs font-bold text-slate-700">워크샵 팀 관리</h2>
-          <div className="mt-2 flex gap-2">
+        <div className="space-y-4">
+          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-800">워크샵 팀 관리</h2>
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                disabled={submitting}
+                onClick={openTeamModal}
+              >
+                편집
+              </button>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {teams.length === 0 ? (
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500">등록된 팀 없음</span>
+              ) : (
+                teams.map((team) => (
+                  <span
+                    key={team.id}
+                    className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700"
+                  >
+                    {team.name}
+                  </span>
+                ))
+              )}
+            </div>
+          </section>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
             <input
-              className="flex-1 rounded-lg border border-slate-300 px-2 py-2 text-xs"
-              placeholder="새 워크샵 팀 이름"
-              value={newTeamName}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              placeholder="아이디/이름/팀 검색"
+              value={search}
               disabled={submitting}
-              onChange={(event) => setNewTeamName(event.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
             />
-            <button
-              type="button"
-              className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
-              disabled={submitting}
-              onClick={() => {
-                void handleCreateTeam();
-              }}
-            >
-              추가
-            </button>
           </div>
-          <div className="mt-3 space-y-2">
-            {teams.map((team) => (
-              <div key={team.id} className="flex items-center gap-2">
-                <input
-                  className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs"
-                  value={team.name}
-                  disabled={submitting}
-                  onChange={(event) => {
-                    setTeams((prev) =>
-                      prev.map((item) => (item.id === team.id ? { ...item, name: event.target.value } : item)),
-                    );
-                  }}
-                />
-                <button
-                  type="button"
-                  className="rounded border border-slate-300 px-2 py-1 text-[10px] font-semibold"
-                  disabled={submitting}
-                  onClick={() => {
-                    void handleSaveTeam(team);
-                  }}
-                >
-                  저장
-                </button>
-                <button
-                  type="button"
-                  className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-600"
-                  disabled={submitting}
-                  onClick={() => {
-                    void handleDeleteTeam(team.id);
-                  }}
-                >
-                  삭제
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-          <input
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            placeholder="아이디/이름/팀 검색"
-            value={search}
-            disabled={submitting}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
-
-        <div className="space-y-3">
-          {filteredUsers.map((user) => (
-            <article key={user.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">{user.name}</h3>
-                    <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      팀: {user.team} · 워크샵팀: {user.workshopTeamName ?? '미배정'}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">권한: {user.role === 'ADMIN' ? '관리자' : '참가자'}</p>
+          <div className="space-y-3">
+            {filteredUsers.map((user) => (
+              <article key={user.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div className="p-4">
+                  <h3 className="text-sm font-bold text-slate-900">{user.name}</h3>
+                  <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
+                  <p className="mt-2 text-xs text-slate-500">팀: {user.team}</p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
+                      워크샵팀 {user.workshopTeamName ?? '미배정'}
+                    </span>
+                    <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${roleBadgeClass(user.role)}`}>
+                      권한 {user.role === 'ADMIN' ? '관리자' : '참가자'}
+                    </span>
                   </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
-                <button
-                  type="button"
-                  className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
-                  disabled={submitting}
-                  onClick={() => openEditModal(user)}
-                >
-                  수정
-                </button>
-                <button
-                  type="button"
-                  className="rounded-md border border-amber-200 bg-amber-50 py-1 text-[10px] font-semibold text-amber-700 disabled:opacity-50"
-                  disabled={submitting}
-                  onClick={() => {
-                    void handleResetPassword(user.id);
-                  }}
-                >
-                  비번초기화
-                </button>
-                <button
-                  type="button"
-                  className="rounded-md border border-red-200 bg-red-50 py-1 text-[10px] font-semibold text-red-600"
-                  disabled={submitting}
-                  onClick={() => {
-                    void handleDeleteUser(user.id);
-                  }}
-                >
-                  삭제
-                </button>
-              </div>
-            </article>
-          ))}
+                <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
+                  <button
+                    type="button"
+                    className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
+                    disabled={submitting}
+                    onClick={() => openEditUserModal(user)}
+                  >
+                    수정
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-amber-200 bg-amber-50 py-1 text-[10px] font-semibold text-amber-700 disabled:opacity-50"
+                    disabled={submitting}
+                    onClick={() => {
+                      void handleResetPassword(user.id);
+                    }}
+                  >
+                    비번초기화
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-red-200 bg-red-50 py-1 text-[10px] font-semibold text-red-600"
+                    disabled={submitting}
+                    onClick={() => {
+                      void handleDeleteUser(user.id);
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
       ) : null}
 
-      {modalOpen ? (
+      {userModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="text-sm font-bold text-slate-900">{form.id ? '사용자 수정' : '사용자 추가'}</h3>
+              <h3 className="text-sm font-bold text-slate-900">{userForm.id ? '사용자 수정' : '사용자 추가'}</h3>
               <button
                 type="button"
                 className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
-                onClick={() => setModalOpen(false)}
+                onClick={() => setUserModalOpen(false)}
               >
                 닫기
               </button>
@@ -413,54 +414,54 @@ export default function AdminUsersPage() {
               <label className="text-[10px] font-semibold text-slate-500">아이디</label>
               <input
                 className={`w-full rounded border px-2 py-2 text-xs ${
-                  fieldErrors.username ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                  userFieldErrors.username ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
                 }`}
-                value={form.username}
+                value={userForm.username}
                 disabled={submitting}
                 onChange={(event) => {
-                  setFieldErrors((prev) => ({ ...prev, username: undefined }));
-                  setForm((prev) => ({ ...prev, username: event.target.value }));
+                  setUserFieldErrors((prev) => ({ ...prev, username: undefined }));
+                  setUserForm((prev) => ({ ...prev, username: event.target.value }));
                 }}
               />
-              {fieldErrors.username ? (
-                <p className="text-[10px] font-semibold text-red-600">{fieldErrors.username}</p>
+              {userFieldErrors.username ? (
+                <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.username}</p>
               ) : null}
 
               <label className="text-[10px] font-semibold text-slate-500">이름</label>
               <input
                 className={`w-full rounded border px-2 py-2 text-xs ${
-                  fieldErrors.name ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                  userFieldErrors.name ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
                 }`}
-                value={form.name}
+                value={userForm.name}
                 disabled={submitting}
                 onChange={(event) => {
-                  setFieldErrors((prev) => ({ ...prev, name: undefined }));
-                  setForm((prev) => ({ ...prev, name: event.target.value }));
+                  setUserFieldErrors((prev) => ({ ...prev, name: undefined }));
+                  setUserForm((prev) => ({ ...prev, name: event.target.value }));
                 }}
               />
-              {fieldErrors.name ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.name}</p> : null}
+              {userFieldErrors.name ? <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.name}</p> : null}
 
               <label className="text-[10px] font-semibold text-slate-500">팀</label>
               <input
                 className={`w-full rounded border px-2 py-2 text-xs ${
-                  fieldErrors.team ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                  userFieldErrors.team ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
                 }`}
-                value={form.team}
+                value={userForm.team}
                 disabled={submitting}
                 onChange={(event) => {
-                  setFieldErrors((prev) => ({ ...prev, team: undefined }));
-                  setForm((prev) => ({ ...prev, team: event.target.value }));
+                  setUserFieldErrors((prev) => ({ ...prev, team: undefined }));
+                  setUserForm((prev) => ({ ...prev, team: event.target.value }));
                 }}
               />
-              {fieldErrors.team ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.team}</p> : null}
+              {userFieldErrors.team ? <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.team}</p> : null}
 
               <label className="text-[10px] font-semibold text-slate-500">워크샵 팀</label>
               <select
                 className="w-full rounded border border-slate-300 px-2 py-2 text-xs"
-                value={form.workshopTeamId ?? ''}
+                value={userForm.workshopTeamId ?? ''}
                 disabled={submitting}
                 onChange={(event) => {
-                  setForm((prev) => ({ ...prev, workshopTeamId: event.target.value || null }));
+                  setUserForm((prev) => ({ ...prev, workshopTeamId: event.target.value || null }));
                 }}
               >
                 <option value="">미배정</option>
@@ -474,26 +475,26 @@ export default function AdminUsersPage() {
               <label className="text-[10px] font-semibold text-slate-500">권한</label>
               <select
                 className={`w-full rounded border px-2 py-2 text-xs ${
-                  fieldErrors.role ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                  userFieldErrors.role ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
                 }`}
-                value={form.role}
+                value={userForm.role}
                 disabled={submitting}
                 onChange={(event) => {
-                  setFieldErrors((prev) => ({ ...prev, role: undefined }));
-                  setForm((prev) => ({ ...prev, role: event.target.value }));
+                  setUserFieldErrors((prev) => ({ ...prev, role: undefined }));
+                  setUserForm((prev) => ({ ...prev, role: event.target.value }));
                 }}
               >
                 <option value="PARTICIPANT">참가자</option>
                 <option value="ADMIN">관리자</option>
               </select>
-              {fieldErrors.role ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.role}</p> : null}
+              {userFieldErrors.role ? <p className="text-[10px] font-semibold text-red-600">{userFieldErrors.role}</p> : null}
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 className="rounded-md border border-slate-300 py-2 text-xs font-semibold text-slate-700"
-                onClick={() => setModalOpen(false)}
+                onClick={() => setUserModalOpen(false)}
                 disabled={submitting}
               >
                 취소
@@ -508,6 +509,80 @@ export default function AdminUsersPage() {
               >
                 저장
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {teamModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-sm font-bold text-slate-900">워크샵 팀 편집</h3>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => setTeamModalOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <input
+                className="flex-1 rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                placeholder="새 워크샵 팀 이름"
+                value={newTeamName}
+                disabled={submitting}
+                onChange={(event) => setNewTeamName(event.target.value)}
+              />
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
+                disabled={submitting}
+                onClick={() => {
+                  void handleCreateTeam();
+                }}
+              >
+                추가
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {teamDrafts.map((team) => (
+                <div key={team.id} className="flex items-center gap-2">
+                  <input
+                    className="flex-1 rounded border border-slate-300 px-2 py-1 text-xs"
+                    value={team.name}
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setTeamDrafts((prev) =>
+                        prev.map((item) => (item.id === team.id ? { ...item, name: event.target.value } : item)),
+                      );
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="rounded border border-slate-300 px-2 py-1 text-[10px] font-semibold"
+                    disabled={submitting}
+                    onClick={() => {
+                      void handleSaveTeam(team);
+                    }}
+                  >
+                    저장
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-600"
+                    disabled={submitting}
+                    onClick={() => {
+                      void handleDeleteTeam(team.id);
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
