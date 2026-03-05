@@ -85,9 +85,9 @@ class WorkshopControllerTest {
                         mockMvc.perform(post("/api/v1/workshop/sessions")
                                         .contentType(MediaType.APPLICATION_JSON)
                                         .content(objectMapper.writeValueAsString(
-                                                new SessionPayload("테스트팀", "테스트 세션", "테스터", "테스트 홀", true, 1))))
+                                                new SessionPayload("team-alpha", "테스트 세션", "테스트 설명", 40))))
                                 .andExpect(status().isCreated())
-                                .andExpect(jsonPath("$.team").value("테스트팀"))
+                                .andExpect(jsonPath("$.workshopTeamId").value("team-alpha"))
                                 .andReturn()
                                 .getResponse()
                                 .getContentAsString())
@@ -177,6 +177,60 @@ class WorkshopControllerTest {
     }
 
     @Test
+    void sessionReorderChangesListOrder() throws Exception {
+        String firstId = objectMapper.readTree(
+                        mockMvc.perform(post("/api/v1/workshop/sessions")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(
+                                                new SessionPayload("team-alpha", "A 세션", "설명 A", 30))))
+                                .andExpect(status().isCreated())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString())
+                .get("id")
+                .asText();
+
+        String secondId = objectMapper.readTree(
+                        mockMvc.perform(post("/api/v1/workshop/sessions")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(
+                                                new SessionPayload("team-beta", "B 세션", "설명 B", 45))))
+                                .andExpect(status().isCreated())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString())
+                .get("id")
+                .asText();
+
+        com.fasterxml.jackson.databind.JsonNode sessionsNode = objectMapper.readTree(
+                mockMvc.perform(get("/api/v1/workshop/sessions"))
+                        .andExpect(status().isOk())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString()
+        );
+        java.util.List<String> orderedIds = new java.util.ArrayList<>();
+        orderedIds.add(secondId);
+        orderedIds.add(firstId);
+        for (com.fasterxml.jackson.databind.JsonNode node : sessionsNode) {
+            String sessionId = node.get("id").asText();
+            if (!sessionId.equals(firstId) && !sessionId.equals(secondId)) {
+                orderedIds.add(sessionId);
+            }
+        }
+
+        mockMvc.perform(post("/api/v1/workshop/sessions/reorder")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SessionReorderPayload(orderedIds))))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/workshop/sessions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(secondId))
+                .andExpect(jsonPath("$[1].id").value(firstId));
+    }
+
+    @Test
     void deleteUnknownMissionReturns404() throws Exception {
         mockMvc.perform(delete("/api/v1/workshop/missions/{id}", "mis-unknown"))
                 .andExpect(status().isNotFound())
@@ -203,16 +257,17 @@ class WorkshopControllerTest {
     }
 
     private record SessionPayload(
-            String team,
+            String workshopTeamId,
             String title,
-            String speaker,
-            String room,
-            boolean liveQa,
-            int pendingQuestions
+            String description,
+            int runningMinutes
     ) {
     }
 
     private record TeamPayload(String name) {
+    }
+
+    private record SessionReorderPayload(java.util.List<String> orderedIds) {
     }
 
     private record UserPayload(

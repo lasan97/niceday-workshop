@@ -296,6 +296,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/sessions/reorder:
+    post:
+      summary: 세션 카드 순서 변경
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionReorderRequest'
+      responses:
+        '204':
+          description: NO CONTENT
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/users:
     get:
       summary: 사용자 목록 조회
@@ -572,23 +590,31 @@ components:
       type: object
       properties:
         id: { type: string }
-        team: { type: string }
+        workshopTeamId: { type: string }
+        workshopTeamName:
+          type: string
+          nullable: true
         title: { type: string }
-        speaker: { type: string }
-        room: { type: string }
-        liveQa: { type: boolean }
-        pendingQuestions: { type: integer }
-      required: [id, team, title, speaker, room, liveQa, pendingQuestions]
+        description: { type: string }
+        runningMinutes: { type: integer }
+        displayOrder: { type: integer }
+      required: [id, workshopTeamId, title, description, runningMinutes, displayOrder]
     SessionUpsertRequest:
       type: object
       properties:
-        team: { type: string }
+        workshopTeamId: { type: string }
         title: { type: string }
-        speaker: { type: string }
-        room: { type: string }
-        liveQa: { type: boolean }
-        pendingQuestions: { type: integer }
-      required: [team, title, speaker, room, liveQa, pendingQuestions]
+        description: { type: string }
+        runningMinutes: { type: integer }
+      required: [workshopTeamId, title, description, runningMinutes]
+    SessionReorderRequest:
+      type: object
+      properties:
+        orderedIds:
+          type: array
+          items:
+            type: string
+      required: [orderedIds]
     UserResponse:
       type: object
       properties:

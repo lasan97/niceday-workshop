@@ -4,11 +4,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 public record SessionUpsertRequest(
-        @NotBlank String team,
+        @NotBlank String workshopTeamId,
         @NotBlank String title,
-        @NotBlank String speaker,
-        @NotBlank String room,
-        boolean liveQa,
-        @Min(0) int pendingQuestions
+        @NotBlank String description,
+        @Min(1) int runningMinutes
 ) {
 }

@@ -572,6 +572,53 @@ export interface paths {
         };
         trace?: never;
     };
+    "/api/v1/workshop/sessions/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 세션 카드 순서 변경 */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SessionReorderRequest"];
+                };
+            };
+            responses: {
+                /** @description NO CONTENT */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description BAD REQUEST */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workshop/users": {
         parameters: {
             query?: never;
@@ -1016,20 +1063,21 @@ export interface components {
         };
         SessionResponse: {
             id: string;
-            team: string;
+            workshopTeamId: string;
+            workshopTeamName?: string | null;
             title: string;
-            speaker: string;
-            room: string;
-            liveQa: boolean;
-            pendingQuestions: number;
+            description: string;
+            runningMinutes: number;
+            displayOrder: number;
         };
         SessionUpsertRequest: {
-            team: string;
+            workshopTeamId: string;
             title: string;
-            speaker: string;
-            room: string;
-            liveQa: boolean;
-            pendingQuestions: number;
+            description: string;
+            runningMinutes: number;
+        };
+        SessionReorderRequest: {
+            orderedIds: string[];
         };
         UserResponse: {
             id: string;

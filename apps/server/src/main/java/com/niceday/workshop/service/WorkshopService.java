@@ -6,6 +6,7 @@ import com.niceday.workshop.api.dto.OverviewResponse;
 import com.niceday.workshop.api.dto.ScheduleItemResponse;
 import com.niceday.workshop.api.dto.ScheduleUpsertRequest;
 import com.niceday.workshop.api.dto.SessionResponse;
+import com.niceday.workshop.api.dto.SessionReorderRequest;
 import com.niceday.workshop.api.dto.SessionUpsertRequest;
 import com.niceday.workshop.api.dto.TeamResponse;
 import com.niceday.workshop.api.dto.TeamUpsertRequest;
@@ -132,29 +133,71 @@ public class WorkshopService {
 
     @Transactional(readOnly = true)
     public List<SessionResponse> getSessions() {
-        return sessionRepository.findAll().stream().map(this::toSessionResponse).toList();
+        Map<String, String> teamNames = teamRepository.findAll().stream()
+                .collect(Collectors.toMap(TeamEntity::getId, TeamEntity::getName));
+
+        return sessionRepository.findAll().stream()
+                .sorted((a, b) -> Integer.compare(a.getDisplayOrder(), b.getDisplayOrder()))
+                .map((session) -> toSessionResponse(session, teamNames))
+                .toList();
     }
 
     @Transactional
     public SessionResponse createSession(SessionUpsertRequest request) {
+        if (!teamRepository.existsById(request.workshopTeamId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "워크샵 팀을 찾을 수 없습니다.");
+        }
+
         String id = nextId("ses");
         SessionEntity entity = new SessionEntity();
         entity.setId(id);
+        entity.setDisplayOrder(nextSessionDisplayOrder());
         applySessionRequest(entity, request);
-        return toSessionResponse(sessionRepository.save(entity));
+        Map<String, String> teamNames = teamRepository.findAll().stream()
+                .collect(Collectors.toMap(TeamEntity::getId, TeamEntity::getName));
+        return toSessionResponse(sessionRepository.save(entity), teamNames);
     }
 
     @Transactional
     public SessionResponse updateSession(String id, SessionUpsertRequest request) {
+        if (!teamRepository.existsById(request.workshopTeamId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "워크샵 팀을 찾을 수 없습니다.");
+        }
+
         SessionEntity entity = sessionRepository.findById(id)
                 .orElseThrow(() -> notFound("세션을 찾을 수 없습니다."));
         applySessionRequest(entity, request);
-        return toSessionResponse(sessionRepository.save(entity));
+        Map<String, String> teamNames = teamRepository.findAll().stream()
+                .collect(Collectors.toMap(TeamEntity::getId, TeamEntity::getName));
+        return toSessionResponse(sessionRepository.save(entity), teamNames);
     }
 
     @Transactional
     public void deleteSession(String id) {
         deleteByIdOrThrow(id, "세션을 찾을 수 없습니다.", sessionRepository::existsById, sessionRepository::deleteById);
+    }
+
+    @Transactional
+    public void reorderSessions(SessionReorderRequest request) {
+        List<SessionEntity> sessions = sessionRepository.findAll();
+        Map<String, SessionEntity> sessionById = sessions.stream()
+                .collect(Collectors.toMap(SessionEntity::getId, Function.identity()));
+
+        if (request.orderedIds().size() != sessions.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "세션 순서 정보가 올바르지 않습니다.");
+        }
+
+        for (String id : request.orderedIds()) {
+            if (!sessionById.containsKey(id)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "세션 순서 정보가 올바르지 않습니다.");
+            }
+        }
+
+        for (int index = 0; index < request.orderedIds().size(); index++) {
+            SessionEntity session = sessionById.get(request.orderedIds().get(index));
+            session.setDisplayOrder(index + 1);
+        }
+        sessionRepository.saveAll(sessions);
     }
 
     @Transactional(readOnly = true)
@@ -314,12 +357,17 @@ public class WorkshopService {
     }
 
     private void applySessionRequest(SessionEntity entity, SessionUpsertRequest request) {
-        entity.setTeam(request.team());
+        entity.setWorkshopTeamId(request.workshopTeamId());
         entity.setTitle(request.title());
-        entity.setSpeaker(request.speaker());
-        entity.setRoom(request.room());
-        entity.setLiveQa(request.liveQa());
-        entity.setPendingQuestions(request.pendingQuestions());
+        entity.setDescription(request.description());
+        entity.setRunningMinutes(request.runningMinutes());
+    }
+
+    private int nextSessionDisplayOrder() {
+        return sessionRepository.findAll().stream()
+                .mapToInt(SessionEntity::getDisplayOrder)
+                .max()
+                .orElse(0) + 1;
     }
 
     private void applyUserRequest(UserEntity entity, UserUpsertRequest request) {
@@ -364,15 +412,15 @@ public class WorkshopService {
         );
     }
 
-    private SessionResponse toSessionResponse(SessionEntity entity) {
+    private SessionResponse toSessionResponse(SessionEntity entity, Map<String, String> teamNames) {
         return new SessionResponse(
                 entity.getId(),
-                entity.getTeam(),
+                entity.getWorkshopTeamId(),
+                entity.getWorkshopTeamId() == null ? null : teamNames.get(entity.getWorkshopTeamId()),
                 entity.getTitle(),
-                entity.getSpeaker(),
-                entity.getRoom(),
-                entity.isLiveQa(),
-                entity.getPendingQuestions()
+                entity.getDescription(),
+                entity.getRunningMinutes(),
+                entity.getDisplayOrder()
         );
     }
 

@@ -13,23 +13,20 @@ public class SessionEntity {
     @Column(length = 64, nullable = false)
     private String id;
 
-    @Column(length = 64, nullable = false)
-    private String team;
+    @Column(name = "workshop_team_id", length = 64)
+    private String workshopTeamId;
 
     @Column(length = 120, nullable = false)
     private String title;
 
-    @Column(length = 64, nullable = false)
-    private String speaker;
+    @Column(length = 400, nullable = false)
+    private String description;
 
-    @Column(length = 64, nullable = false)
-    private String room;
+    @Column(name = "running_minutes", nullable = false)
+    private int runningMinutes;
 
-    @Column(name = "live_qa", nullable = false)
-    private boolean liveQa;
-
-    @Column(name = "pending_questions", nullable = false)
-    private int pendingQuestions;
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder;
 
     public String getId() {
         return id;
@@ -39,12 +36,12 @@ public class SessionEntity {
         this.id = id;
     }
 
-    public String getTeam() {
-        return team;
+    public String getWorkshopTeamId() {
+        return workshopTeamId;
     }
 
-    public void setTeam(String team) {
-        this.team = team;
+    public void setWorkshopTeamId(String workshopTeamId) {
+        this.workshopTeamId = workshopTeamId;
     }
 
     public String getTitle() {
@@ -55,35 +52,27 @@ public class SessionEntity {
         this.title = title;
     }
 
-    public String getSpeaker() {
-        return speaker;
+    public String getDescription() {
+        return description;
     }
 
-    public void setSpeaker(String speaker) {
-        this.speaker = speaker;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public String getRoom() {
-        return room;
+    public int getRunningMinutes() {
+        return runningMinutes;
     }
 
-    public void setRoom(String room) {
-        this.room = room;
+    public void setRunningMinutes(int runningMinutes) {
+        this.runningMinutes = runningMinutes;
     }
 
-    public boolean isLiveQa() {
-        return liveQa;
+    public int getDisplayOrder() {
+        return displayOrder;
     }
 
-    public void setLiveQa(boolean liveQa) {
-        this.liveQa = liveQa;
-    }
-
-    public int getPendingQuestions() {
-        return pendingQuestions;
-    }
-
-    public void setPendingQuestions(int pendingQuestions) {
-        this.pendingQuestions = pendingQuestions;
+    public void setDisplayOrder(int displayOrder) {
+        this.displayOrder = displayOrder;
     }
 }

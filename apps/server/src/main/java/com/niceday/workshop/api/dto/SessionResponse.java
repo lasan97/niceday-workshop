@@ -2,11 +2,11 @@ package com.niceday.workshop.api.dto;
 
 public record SessionResponse(
         String id,
-        String team,
+        String workshopTeamId,
+        String workshopTeamName,
         String title,
-        String speaker,
-        String room,
-        boolean liveQa,
-        int pendingQuestions
+        String description,
+        int runningMinutes,
+        int displayOrder
 ) {
 }

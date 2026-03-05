@@ -6,6 +6,7 @@ import com.niceday.workshop.api.dto.OverviewResponse;
 import com.niceday.workshop.api.dto.ScheduleItemResponse;
 import com.niceday.workshop.api.dto.ScheduleUpsertRequest;
 import com.niceday.workshop.api.dto.SessionResponse;
+import com.niceday.workshop.api.dto.SessionReorderRequest;
 import com.niceday.workshop.api.dto.SessionUpsertRequest;
 import com.niceday.workshop.api.dto.TeamResponse;
 import com.niceday.workshop.api.dto.TeamUpsertRequest;
@@ -105,6 +106,12 @@ public class WorkshopController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSession(@PathVariable String id) {
         workshopService.deleteSession(id);
+    }
+
+    @PostMapping("/sessions/reorder")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reorderSessions(@Valid @RequestBody SessionReorderRequest request) {
+        workshopService.reorderSessions(request);
     }
 
     @GetMapping("/users")

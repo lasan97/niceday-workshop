@@ -33,12 +33,12 @@ export default function ClientHomePage() {
         });
         setCurrentSession({
           id: 'ses-empty',
-          team: '',
+          workshopTeamId: '',
+          workshopTeamName: '미배정',
           title: '진행 중인 세션이 없습니다.',
-          speaker: '',
-          room: '-',
-          liveQa: false,
-          pendingQuestions: 0,
+          description: '-',
+          runningMinutes: 0,
+          displayOrder: 0,
         });
       } finally {
         setLoading(false);
@@ -85,7 +85,7 @@ export default function ClientHomePage() {
             <span className="text-xs font-bold uppercase tracking-wide text-red-500">진행중</span>
           </div>
           <h3 className="text-base font-bold text-slate-900">{currentSession.title}</h3>
-          <p className="mt-1 text-sm text-slate-500">{currentSession.room}</p>
+          <p className="mt-1 text-sm text-slate-500">{currentSession.description}</p>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
             <div className="h-full w-2/3 rounded-full bg-primary" />
           </div>
