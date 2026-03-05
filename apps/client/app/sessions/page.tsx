@@ -10,6 +10,10 @@ type SessionQuestion = Awaited<ReturnType<typeof workshopApi.getSessionQuestions
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 type AuthMeResponse = { username: string; role: 'ADMIN' | 'PARTICIPANT'; team: string };
 
+function normalizeTeam(team: string | null | undefined): string {
+  return (team ?? '').trim();
+}
+
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,20 +26,34 @@ export default function SessionsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
 
+  async function fetchMe(): Promise<AuthMeResponse | null> {
+    const meResponse = await fetch('/api/auth/me', { cache: 'no-store' });
+    if (!meResponse.ok) {
+      return null;
+    }
+    return (await meResponse.json()) as AuthMeResponse;
+  }
+
+  const canAnswer = Boolean(
+    me
+      && modalSession
+      && (me.role === 'ADMIN' || normalizeTeam(me.team) === normalizeTeam(modalSession.team)),
+  );
+
   useEffect(() => {
     async function load() {
       try {
-        const [data, meResponse] = await Promise.all([
+        const [data, meBody] = await Promise.all([
           workshopApi.getSessions(),
-          fetch('/api/auth/me', { cache: 'no-store' }),
+          fetchMe(),
         ]);
         setSessions(data);
-        if (meResponse.ok) {
-          const meBody = (await meResponse.json()) as AuthMeResponse;
+        if (meBody) {
           setMe(meBody);
         }
       } catch {
         setSessions([]);
+        setMe(null);
       } finally {
         setLoading(false);
       }
@@ -45,14 +63,18 @@ export default function SessionsPage() {
   }, []);
 
   async function openQaModal(session: SessionResponse) {
-    setModalSession(session);
-    setQuestionText('');
-    setAnswerDrafts({});
-    setToast(null);
-    setLoadingQuestions(true);
     try {
-      const list = await workshopApi.getSessionQuestions(session.id);
+      setModalSession(session);
+      setQuestionText('');
+      setAnswerDrafts({});
+      setToast(null);
+      setLoadingQuestions(true);
+      const [list, meBody] = await Promise.all([
+        workshopApi.getSessionQuestions(session.id),
+        fetchMe(),
+      ]);
       setQuestions(list);
+      setMe(meBody);
       setAnswerDrafts(
         Object.fromEntries(list.map((item) => [item.id, item.answer ?? ''])),
       );
@@ -91,7 +113,7 @@ export default function SessionsPage() {
     if (!modalSession || submitting) {
       return;
     }
-    if (!(me?.role === 'ADMIN' || me?.team === modalSession.team)) {
+    if (!canAnswer) {
       return;
     }
     const answer = answerDrafts[questionId]?.trim();
@@ -214,7 +236,7 @@ export default function SessionsPage() {
                         </p>
                       )}
 
-                      {me && modalSession && (me.role === 'ADMIN' || me.team === modalSession.team) ? (
+                      {canAnswer ? (
                         <div className="mt-2 flex gap-2">
                           <textarea
                             className="flex-1 rounded border border-slate-300 bg-white px-2 py-1 text-xs"
