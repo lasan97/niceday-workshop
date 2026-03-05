@@ -7,7 +7,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: '사번과 비밀번호를 입력해주세요.' }, { status: 400 });
   }
 
-  const role = body.employeeId.toLowerCase().startsWith('admin') ? 'ADMIN' : 'PARTICIPANT';
+  const apiBase = process.env.SERVER_API_BASE_URL ?? 'http://localhost:8080';
+  const authResponse = await fetch(`${apiBase}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: body.employeeId,
+      password: body.password,
+    }),
+    cache: 'no-store',
+  });
+
+  if (!authResponse.ok) {
+    return NextResponse.json({ message: '인증에 실패했습니다.' }, { status: 401 });
+  }
+
+  const authBody = (await authResponse.json()) as { role: 'ADMIN' | 'PARTICIPANT' };
+  const role = authBody.role;
 
   const response = NextResponse.json({ role });
   response.cookies.set('workshop_role', role, {

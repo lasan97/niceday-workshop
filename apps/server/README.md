@@ -9,14 +9,13 @@ gradle bootRun
 ```
 
 기본 프로파일은 `local`입니다.
+기본 프로파일은 `dev`입니다.
 
-- `local`: H2 인메모리 DB
 - `dev`: PostgreSQL
 
 프로파일 지정 실행:
 
 ```bash
-gradle bootRun --args='--spring.profiles.active=local'
 gradle bootRun --args='--spring.profiles.active=dev'
 ```
 
@@ -24,7 +23,6 @@ gradle bootRun --args='--spring.profiles.active=dev'
 
 - Java 17
 - Spring Boot 3.3.x
-- H2 (local)
 - PostgreSQL 16 (dev)
 
 ## Read API (v1)
@@ -34,5 +32,6 @@ gradle bootRun --args='--spring.profiles.active=dev'
 - `GET /api/v1/workshop/missions`
 - `GET /api/v1/workshop/sessions`
 - `GET /api/v1/workshop/users`
+- `POST /api/v1/auth/login`
 
 OpenAPI 초안: `src/main/resources/openapi/workshop-api.yaml`

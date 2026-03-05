@@ -6,6 +6,24 @@ info:
 servers:
   - url: http://localhost:8080
 paths:
+  /api/v1/auth/login:
+    post:
+      summary: 로그인 인증
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '401':
+          description: UNAUTHORIZED
   /api/v1/workshop/overview:
     get:
       summary: 워크샵 개요 통계 조회
@@ -119,3 +137,14 @@ components:
         department: { type: string }
         role: { type: string }
       required: [id, name, team, department, role]
+    AuthLoginRequest:
+      type: object
+      properties:
+        username: { type: string }
+        password: { type: string }
+      required: [username, password]
+    AuthLoginResponse:
+      type: object
+      properties:
+        role: { type: string }
+      required: [role]

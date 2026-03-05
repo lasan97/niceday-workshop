@@ -11,3 +11,13 @@ spring:
 logging:
   level:
     org.hibernate.SQL: info
+
+app:
+  auth:
+    accounts:
+      - username: ${ADMIN_USERNAME:admin}
+        password: ${ADMIN_PASSWORD:admin1234}
+        role: ADMIN
+      - username: ${PARTICIPANT_USERNAME:user01}
+        password: ${PARTICIPANT_PASSWORD:user1234}
+        role: PARTICIPANT

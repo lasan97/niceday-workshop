@@ -2,7 +2,7 @@ spring:
   application:
     name: workshop-server
   profiles:
-    default: local
+    default: dev
   jpa:
     hibernate:
       ddl-auto: update
