@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { TeamResponse, UserResponse } from '@workshop/types';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
+import { PageSpinner } from '../components/PageSpinner';
 import { Toast } from '../components/Toast';
 
 type UserRow = UserResponse;
@@ -29,27 +30,10 @@ const emptyForm: UserForm = {
   role: 'PARTICIPANT',
 };
 
-const fallbackUsers: UserRow[] = [
-  {
-    id: 'usr-local-1',
-    username: 'user01',
-    name: '홍길동',
-    team: '알파팀',
-    workshopTeamId: 'team-alpha',
-    workshopTeamName: '알파팀',
-    department: '',
-    role: 'PARTICIPANT',
-  },
-];
-
-const fallbackTeams: TeamResponse[] = [
-  { id: 'team-alpha', name: '알파팀' },
-  { id: 'team-beta', name: '베타팀' },
-];
-
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<UserRow[]>(fallbackUsers);
-  const [teams, setTeams] = useState<TeamResponse[]>(fallbackTeams);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [teams, setTeams] = useState<TeamResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [search, setSearch] = useState('');
@@ -63,7 +47,7 @@ export default function AdminUsersPage() {
       const data = await workshopApi.getUsers();
       setUsers(data);
     } catch {
-      setToast({ type: 'error', message: '사용자 조회에 실패했습니다. 로컬 데이터를 표시합니다.' });
+      setToast({ type: 'error', message: '사용자 조회에 실패했습니다.' });
     }
   }
 
@@ -77,7 +61,7 @@ export default function AdminUsersPage() {
   }
 
   useEffect(() => {
-    void Promise.all([loadUsers(), loadTeams()]);
+    void Promise.all([loadUsers(), loadTeams()]).finally(() => setLoading(false));
   }, []);
 
   function openCreateModal() {
@@ -288,7 +272,8 @@ export default function AdminUsersPage() {
       }
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
-
+      {loading ? <PageSpinner label="사용자 데이터를 불러오는 중..." /> : null}
+      {!loading ? (
       <div className="space-y-4">
         <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
           <h2 className="text-xs font-bold text-slate-700">워크샵 팀 관리</h2>
@@ -408,6 +393,7 @@ export default function AdminUsersPage() {
           ))}
         </div>
       </div>
+      ) : null}
 
       {modalOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">

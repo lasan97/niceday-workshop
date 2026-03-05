@@ -5,28 +5,12 @@ import { useEffect, useState } from 'react';
 import type { OverviewResponse, SessionResponse } from '@workshop/types';
 import { workshopApi } from '../lib/workshop-api';
 import { ClientBottomNav } from './components/ClientBottomNav';
-
-const fallbackOverview: OverviewResponse = {
-  activeMissions: 12,
-  upcomingSessions: 8,
-  totalUsers: 150,
-  totalSchedules: 5,
-  pendingSubmissions: 3,
-};
-
-const fallbackSession: SessionResponse = {
-  id: 'ses-local',
-  team: '알파팀',
-  title: '해변 릴레이 레이스',
-  speaker: '현장 진행자',
-  room: '경포 해변',
-  liveQa: true,
-  pendingQuestions: 0,
-};
+import { PageSpinner } from './components/PageSpinner';
 
 export default function ClientHomePage() {
-  const [overview, setOverview] = useState<OverviewResponse>(fallbackOverview);
-  const [currentSession, setCurrentSession] = useState<SessionResponse>(fallbackSession);
+  const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [currentSession, setCurrentSession] = useState<SessionResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -40,12 +24,40 @@ export default function ClientHomePage() {
           setCurrentSession(sessions[0]);
         }
       } catch {
-        // API 연결 실패 시 fallback 데이터를 유지한다.
+        setOverview({
+          activeMissions: 0,
+          upcomingSessions: 0,
+          totalUsers: 0,
+          totalSchedules: 0,
+          pendingSubmissions: 0,
+        });
+        setCurrentSession({
+          id: 'ses-empty',
+          team: '',
+          title: '진행 중인 세션이 없습니다.',
+          speaker: '',
+          room: '-',
+          liveQa: false,
+          pendingQuestions: 0,
+        });
+      } finally {
+        setLoading(false);
       }
     }
 
     void load();
   }, []);
+
+  if (loading || !overview || !currentSession) {
+    return (
+      <main className="mx-auto min-h-screen w-full max-w-md bg-slate-100 pb-20 shadow-xl">
+        <section className="px-4 pb-3 pt-5">
+          <PageSpinner label="홈 데이터를 불러오는 중..." />
+        </section>
+        <ClientBottomNav />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-md bg-slate-100 pb-20 shadow-xl">

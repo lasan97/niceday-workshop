@@ -4,26 +4,16 @@ import { useEffect, useState } from 'react';
 import type { SessionResponse } from '@workshop/types';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
+import { PageSpinner } from '../components/PageSpinner';
 import { Toast } from '../components/Toast';
-
-const fallbackSessions: SessionResponse[] = [
-  {
-    id: 'ses-local-1',
-    team: '알파팀',
-    title: '업무 환경에서의 AI 미래',
-    speaker: '제인 도',
-    room: '그랜드홀 A',
-    liveQa: true,
-    pendingQuestions: 5,
-  },
-];
 
 type SessionFieldKey = 'team' | 'title' | 'speaker' | 'room';
 type SessionFieldErrors = Partial<Record<SessionFieldKey, string>>;
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
 export default function AdminSessionsPage() {
-  const [sessions, setSessions] = useState<SessionResponse[]>(fallbackSessions);
+  const [sessions, setSessions] = useState<SessionResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, SessionFieldErrors>>({});
@@ -33,7 +23,9 @@ export default function AdminSessionsPage() {
       const data = await workshopApi.getSessions();
       setSessions(data);
     } catch {
-      setToast({ type: 'error', message: '세션 조회에 실패했습니다. 로컬 데이터를 표시합니다.' });
+      setToast({ type: 'error', message: '세션 조회에 실패했습니다.' });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -178,6 +170,8 @@ export default function AdminSessionsPage() {
       }
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
+      {loading ? <PageSpinner label="세션 목록을 불러오는 중..." /> : null}
+      {!loading ? (
       <div className="space-y-3">
         {sessions.map((item) => {
           const rowErrors = fieldErrors[item.id] ?? {};
@@ -297,6 +291,7 @@ export default function AdminSessionsPage() {
           );
         })}
       </div>
+      ) : null}
     </AdminScreen>
   );
 }

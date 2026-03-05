@@ -3,16 +3,12 @@
 import { useEffect, useState } from 'react';
 import type { MissionResponse } from '@workshop/types';
 import { workshopApi } from '../../lib/workshop-api';
+import { PageSpinner } from '../components/PageSpinner';
 import { ClientScreen } from '../components/ClientScreen';
 
-const fallbackMissions: MissionResponse[] = [
-  { id: 'mis-local-1', title: '경포 해변 인증샷', points: 200, active: true, pendingApprovals: 0 },
-  { id: 'mis-local-2', title: '팀 구호 외치기', points: 150, active: false, pendingApprovals: 0 },
-  { id: 'mis-local-3', title: '로컬 맛집 미션', points: 300, active: true, pendingApprovals: 0 },
-];
-
 export default function MissionsPage() {
-  const [missions, setMissions] = useState<MissionResponse[]>(fallbackMissions);
+  const [missions, setMissions] = useState<MissionResponse[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -20,7 +16,9 @@ export default function MissionsPage() {
         const data = await workshopApi.getMissions();
         setMissions(data);
       } catch {
-        // API 연결 실패 시 fallback 데이터를 유지한다.
+        setMissions([]);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -29,6 +27,9 @@ export default function MissionsPage() {
 
   return (
     <ClientScreen title="팀 빌딩 미션" subtitle="현재 리더보드">
+      {loading ? <PageSpinner label="미션 정보를 불러오는 중..." /> : null}
+      {!loading ? (
+      <>
       <section className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
         <p className="text-sm font-bold text-slate-900">1위 팀 어썸 · 1450점</p>
         <p className="mt-1 text-sm text-primary">2위 나이스 익스플로러(우리 팀) · 1200점</p>
@@ -60,6 +61,8 @@ export default function MissionsPage() {
           </article>
         ))}
       </section>
+      </>
+      ) : null}
     </ClientScreen>
   );
 }

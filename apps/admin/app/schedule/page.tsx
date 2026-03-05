@@ -4,33 +4,16 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ScheduleItemResponse } from '@workshop/types';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
+import { PageSpinner } from '../components/PageSpinner';
 import { Toast } from '../components/Toast';
-
-const fallbackSchedules: ScheduleItemResponse[] = [
-  {
-    id: 'sch-local-1',
-    day: '1일차',
-    startsAt: '09:00',
-    endsAt: '10:30',
-    title: '등록 및 환영',
-    location: '그랜드 로비',
-  },
-  {
-    id: 'sch-local-2',
-    day: '2일차',
-    startsAt: '09:00',
-    endsAt: '12:00',
-    title: '팀 빌딩 미션',
-    location: '강릉 해변',
-  },
-];
 
 type ScheduleFieldKey = 'startsAt' | 'endsAt' | 'title' | 'location';
 type ScheduleFieldErrors = Partial<Record<ScheduleFieldKey, string>>;
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
 export default function AdminSchedulePage() {
-  const [schedules, setSchedules] = useState<ScheduleItemResponse[]>(fallbackSchedules);
+  const [schedules, setSchedules] = useState<ScheduleItemResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, ScheduleFieldErrors>>({});
@@ -40,7 +23,9 @@ export default function AdminSchedulePage() {
       const data = await workshopApi.getSchedules();
       setSchedules(data);
     } catch {
-      setToast({ type: 'error', message: '일정 조회에 실패했습니다. 로컬 데이터를 표시합니다.' });
+      setToast({ type: 'error', message: '일정 조회에 실패했습니다.' });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -189,6 +174,8 @@ export default function AdminSchedulePage() {
       }
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
+      {loading ? <PageSpinner label="일정 목록을 불러오는 중..." /> : null}
+      {!loading ? (
       <div className="space-y-6">
         {!hasSchedules ? (
           <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center shadow-sm">
@@ -336,6 +323,7 @@ export default function AdminSchedulePage() {
           </section>
         ))}
       </div>
+      ) : null}
     </AdminScreen>
   );
 }

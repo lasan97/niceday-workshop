@@ -3,22 +3,12 @@
 import { useEffect, useState } from 'react';
 import type { SessionResponse } from '@workshop/types';
 import { workshopApi } from '../../lib/workshop-api';
+import { PageSpinner } from '../components/PageSpinner';
 import { ClientScreen } from '../components/ClientScreen';
 
-const fallbackSessions: SessionResponse[] = [
-  {
-    id: 'ses-local-1',
-    team: '알파팀',
-    title: '디자인에서의 AI 혁신',
-    speaker: '제인 도',
-    room: '101호',
-    liveQa: true,
-    pendingQuestions: 3,
-  },
-];
-
 export default function SessionsPage() {
-  const [sessions, setSessions] = useState<SessionResponse[]>(fallbackSessions);
+  const [sessions, setSessions] = useState<SessionResponse[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -26,7 +16,9 @@ export default function SessionsPage() {
         const data = await workshopApi.getSessions();
         setSessions(data);
       } catch {
-        // API 연결 실패 시 fallback 데이터를 유지한다.
+        setSessions([]);
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -35,6 +27,8 @@ export default function SessionsPage() {
 
   return (
     <ClientScreen title="팀 컨퍼런스" subtitle="강릉 컨벤션 센터">
+      {loading ? <PageSpinner label="세션 정보를 불러오는 중..." /> : null}
+      {!loading ? (
       <div className="space-y-3 pb-4">
         {sessions.map((session) => (
           <article key={session.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -56,6 +50,7 @@ export default function SessionsPage() {
           </article>
         ))}
       </div>
+      ) : null}
     </ClientScreen>
   );
 }

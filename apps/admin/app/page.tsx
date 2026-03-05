@@ -5,17 +5,11 @@ import { useEffect, useState } from 'react';
 import type { OverviewResponse } from '@workshop/types';
 import { workshopApi } from '../lib/workshop-api';
 import { AdminScreen } from './components/AdminScreen';
-
-const fallbackOverview: OverviewResponse = {
-  activeMissions: 12,
-  upcomingSessions: 8,
-  totalUsers: 150,
-  totalSchedules: 5,
-  pendingSubmissions: 3,
-};
+import { PageSpinner } from './components/PageSpinner';
 
 export default function AdminHomePage() {
-  const [overview, setOverview] = useState<OverviewResponse>(fallbackOverview);
+  const [overview, setOverview] = useState<OverviewResponse | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -23,12 +17,28 @@ export default function AdminHomePage() {
         const data = await workshopApi.getOverview();
         setOverview(data);
       } catch {
-        // API 연결 실패 시 fallback 데이터를 유지한다.
+        setOverview({
+          activeMissions: 0,
+          upcomingSessions: 0,
+          totalUsers: 0,
+          totalSchedules: 0,
+          pendingSubmissions: 0,
+        });
+      } finally {
+        setLoading(false);
       }
     }
 
     void load();
   }, []);
+
+  if (loading || !overview) {
+    return (
+      <AdminScreen title="나이스데이 관리자" subtitle="워크샵 개요 · 강릉 행사 운영">
+        <PageSpinner label="대시보드 데이터를 불러오는 중..." />
+      </AdminScreen>
+    );
+  }
 
   const stats = [
     { title: '활성 미션', value: String(overview.activeMissions), note: '현재 진행 중인 미션 수' },

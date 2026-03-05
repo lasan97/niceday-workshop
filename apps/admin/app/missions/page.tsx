@@ -3,21 +3,17 @@
 import { useEffect, useState } from 'react';
 import type { MissionResponse } from '@workshop/types';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
+import { PageSpinner } from '../components/PageSpinner';
 import { AdminScreen } from '../components/AdminScreen';
 import { Toast } from '../components/Toast';
-
-const fallbackMissions: MissionResponse[] = [
-  { id: 'mis-local-1', title: '숨은 보물 찾기', points: 50, active: true, pendingApprovals: 1 },
-  { id: 'mis-local-2', title: '팀 피라미드 사진', points: 30, active: true, pendingApprovals: 2 },
-  { id: 'mis-local-3', title: '커피 브레이크 퀴즈', points: 10, active: false, pendingApprovals: 0 },
-];
 
 type MissionFieldKey = 'title' | 'points';
 type MissionFieldErrors = Partial<Record<MissionFieldKey, string>>;
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
 export default function AdminMissionsPage() {
-  const [missions, setMissions] = useState<MissionResponse[]>(fallbackMissions);
+  const [missions, setMissions] = useState<MissionResponse[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, MissionFieldErrors>>({});
@@ -28,6 +24,8 @@ export default function AdminMissionsPage() {
       setMissions(data);
     } catch {
       setToast({ type: 'error', message: '미션 조회에 실패했습니다.' });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -163,6 +161,8 @@ export default function AdminMissionsPage() {
       }
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
+      {loading ? <PageSpinner label="미션 목록을 불러오는 중..." /> : null}
+      {!loading ? (
       <section className="space-y-3">
         {missions.map((mission) => {
           const rowErrors = fieldErrors[mission.id] ?? {};
@@ -255,13 +255,16 @@ export default function AdminMissionsPage() {
           );
         })}
       </section>
+      ) : null}
 
+      {!loading ? (
       <section className="mt-6">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-700">사진 제출</h3>
           <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">대기 {pending}건</span>
         </div>
       </section>
+      ) : null}
     </AdminScreen>
   );
 }
