@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { SessionResponse } from '@workshop/types';
-import { workshopApi } from '../../lib/workshop-api';
+import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 
 const fallbackSessions: SessionResponse[] = [
@@ -27,7 +27,7 @@ export default function AdminSessionsPage() {
       const data = await workshopApi.getSessions();
       setSessions(data);
     } catch {
-      setNotice('세션 조회에 실패했습니다.');
+      setNotice('세션 조회에 실패했습니다. 로컬 데이터를 표시합니다.');
     }
   }
 
@@ -53,8 +53,8 @@ export default function AdminSessionsPage() {
       });
       await loadSessions();
       setNotice('세션을 추가했습니다.');
-    } catch {
-      setNotice('세션 추가에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '세션 추가에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -62,6 +62,10 @@ export default function AdminSessionsPage() {
 
   async function handleSaveSession(item: SessionResponse) {
     if (submitting) {
+      return;
+    }
+    if (!item.team.trim() || !item.title.trim() || !item.speaker.trim() || !item.room.trim()) {
+      setNotice('팀, 제목, 발표자, 장소를 모두 입력해주세요.');
       return;
     }
 
@@ -77,8 +81,8 @@ export default function AdminSessionsPage() {
         pendingQuestions: item.pendingQuestions,
       });
       setNotice('세션을 저장했습니다.');
-    } catch {
-      setNotice('세션 저장에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '세션 저장에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -95,8 +99,8 @@ export default function AdminSessionsPage() {
       await workshopApi.deleteSession(id);
       await loadSessions();
       setNotice('세션을 삭제했습니다.');
-    } catch {
-      setNotice('세션 삭제에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '세션 삭제에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -109,7 +113,8 @@ export default function AdminSessionsPage() {
       action={
         <button
           type="button"
-          className="rounded-full bg-primary px-3 py-2 text-xs font-bold text-white"
+          className="rounded-full bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          disabled={submitting}
           onClick={() => {
             void handleCreateSession();
           }}
@@ -126,6 +131,7 @@ export default function AdminSessionsPage() {
               <input
                 className="w-full rounded border border-slate-300 px-2 py-1 text-[10px] font-bold text-primary"
                 value={item.team}
+                disabled={submitting}
                 onChange={(event) => {
                   setSessions((prev) =>
                     prev.map((session) =>
@@ -137,6 +143,7 @@ export default function AdminSessionsPage() {
               <input
                 className="mt-2 w-full rounded border border-slate-300 px-2 py-2 text-sm font-bold text-slate-900"
                 value={item.title}
+                disabled={submitting}
                 onChange={(event) => {
                   setSessions((prev) =>
                     prev.map((session) =>
@@ -148,6 +155,7 @@ export default function AdminSessionsPage() {
               <input
                 className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs text-slate-500"
                 value={item.speaker}
+                disabled={submitting}
                 onChange={(event) => {
                   setSessions((prev) =>
                     prev.map((session) =>
@@ -159,6 +167,7 @@ export default function AdminSessionsPage() {
               <input
                 className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs text-slate-500"
                 value={item.room}
+                disabled={submitting}
                 onChange={(event) => {
                   setSessions((prev) =>
                     prev.map((session) =>
@@ -173,6 +182,7 @@ export default function AdminSessionsPage() {
                 <input
                   checked={item.liveQa}
                   type="checkbox"
+                  disabled={submitting}
                   onChange={(event) => {
                     setSessions((prev) =>
                       prev.map((session) =>
@@ -187,6 +197,7 @@ export default function AdminSessionsPage() {
                 <button
                   type="button"
                   className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                  disabled={submitting}
                   onClick={() => {
                     void handleSaveSession(item);
                   }}
@@ -196,6 +207,7 @@ export default function AdminSessionsPage() {
                 <button
                   type="button"
                   className="rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600"
+                  disabled={submitting}
                   onClick={() => {
                     void handleDeleteSession(item.id);
                   }}

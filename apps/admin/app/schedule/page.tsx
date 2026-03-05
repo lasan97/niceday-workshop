@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ScheduleItemResponse } from '@workshop/types';
-import { workshopApi } from '../../lib/workshop-api';
+import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 
 const fallbackSchedules: ScheduleItemResponse[] = [
@@ -34,7 +34,7 @@ export default function AdminSchedulePage() {
       const data = await workshopApi.getSchedules();
       setSchedules(data);
     } catch {
-      setNotice('일정 조회에 실패했습니다.');
+      setNotice('일정 조회에 실패했습니다. 로컬 데이터를 표시합니다.');
     }
   }
 
@@ -59,8 +59,8 @@ export default function AdminSchedulePage() {
       });
       await loadSchedules();
       setNotice('일정을 추가했습니다.');
-    } catch {
-      setNotice('일정 추가에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '일정 추가에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -68,6 +68,10 @@ export default function AdminSchedulePage() {
 
   async function handleSave(item: ScheduleItemResponse) {
     if (submitting) {
+      return;
+    }
+    if (!item.title.trim() || !item.location.trim() || !item.startsAt.trim() || !item.endsAt.trim()) {
+      setNotice('시간, 제목, 장소를 모두 입력해주세요.');
       return;
     }
 
@@ -82,8 +86,8 @@ export default function AdminSchedulePage() {
         location: item.location,
       });
       setNotice('일정을 저장했습니다.');
-    } catch {
-      setNotice('일정 저장에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '일정 저장에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -100,8 +104,8 @@ export default function AdminSchedulePage() {
       await workshopApi.deleteSchedule(id);
       await loadSchedules();
       setNotice('일정을 삭제했습니다.');
-    } catch {
-      setNotice('일정 삭제에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '일정 삭제에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -121,7 +125,11 @@ export default function AdminSchedulePage() {
     <AdminScreen
       title="일정 관리"
       subtitle="행사 일정 관리"
-      action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">공지 발송</button>}
+      action={
+        <button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50" disabled>
+          공지 발송
+        </button>
+      }
     >
       {notice ? <p className="mb-3 text-xs font-semibold text-slate-600">{notice}</p> : null}
       <div className="space-y-6">
@@ -132,6 +140,7 @@ export default function AdminSchedulePage() {
               <button
                 type="button"
                 className="text-xs font-semibold text-primary"
+                disabled={submitting}
                 onClick={() => {
                   void handleCreate(day);
                 }}
@@ -146,6 +155,7 @@ export default function AdminSchedulePage() {
                   <input
                     className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
                     value={item.startsAt}
+                    disabled={submitting}
                     onChange={(event) => {
                       setSchedules((prev) =>
                         prev.map((schedule) =>
@@ -157,6 +167,7 @@ export default function AdminSchedulePage() {
                   <input
                     className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
                     value={item.endsAt}
+                    disabled={submitting}
                     onChange={(event) => {
                       setSchedules((prev) =>
                         prev.map((schedule) =>
@@ -169,6 +180,7 @@ export default function AdminSchedulePage() {
                 <input
                   className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
                   value={item.title}
+                  disabled={submitting}
                   onChange={(event) => {
                     setSchedules((prev) =>
                       prev.map((schedule) =>
@@ -180,6 +192,7 @@ export default function AdminSchedulePage() {
                 <input
                   className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
                   value={item.location}
+                  disabled={submitting}
                   onChange={(event) => {
                     setSchedules((prev) =>
                       prev.map((schedule) =>
@@ -192,6 +205,7 @@ export default function AdminSchedulePage() {
                   <button
                     type="button"
                     className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                    disabled={submitting}
                     onClick={() => {
                       void handleSave(item);
                     }}
@@ -201,6 +215,7 @@ export default function AdminSchedulePage() {
                   <button
                     type="button"
                     className="rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600"
+                    disabled={submitting}
                     onClick={() => {
                       void handleDelete(item.id);
                     }}

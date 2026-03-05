@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { MissionResponse } from '@workshop/types';
-import { workshopApi } from '../../lib/workshop-api';
+import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 
 const fallbackMissions: MissionResponse[] = [
@@ -14,13 +14,14 @@ const fallbackMissions: MissionResponse[] = [
 export default function AdminMissionsPage() {
   const [missions, setMissions] = useState<MissionResponse[]>(fallbackMissions);
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState('');
 
   async function loadMissions() {
     try {
       const data = await workshopApi.getMissions();
       setMissions(data);
     } catch {
-      // API 연결 실패 시 fallback 데이터를 유지한다.
+      setNotice('미션 조회에 실패했습니다.');
     }
   }
 
@@ -34,6 +35,7 @@ export default function AdminMissionsPage() {
     }
 
     setSubmitting(true);
+    setNotice('');
     try {
       await workshopApi.createMission({
         title: '새 미션',
@@ -42,6 +44,9 @@ export default function AdminMissionsPage() {
         pendingApprovals: 0,
       });
       await loadMissions();
+      setNotice('미션을 추가했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '미션 추가에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -51,8 +56,17 @@ export default function AdminMissionsPage() {
     if (submitting) {
       return;
     }
+    if (!mission.title.trim()) {
+      setNotice('미션 제목을 입력해주세요.');
+      return;
+    }
+    if (mission.points < 0) {
+      setNotice('점수는 0 이상이어야 합니다.');
+      return;
+    }
 
     setSubmitting(true);
+    setNotice('');
     try {
       await workshopApi.updateMission(mission.id, {
         title: mission.title,
@@ -61,6 +75,9 @@ export default function AdminMissionsPage() {
         pendingApprovals: mission.pendingApprovals,
       });
       await loadMissions();
+      setNotice('미션 상태를 저장했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '미션 저장에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -72,9 +89,13 @@ export default function AdminMissionsPage() {
     }
 
     setSubmitting(true);
+    setNotice('');
     try {
       await workshopApi.deleteMission(id);
       await loadMissions();
+      setNotice('미션을 삭제했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '미션 삭제에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -91,11 +112,13 @@ export default function AdminMissionsPage() {
           type="button"
           className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
           onClick={handleCreateMission}
+          disabled={submitting}
         >
           + 추가
         </button>
       }
     >
+      {notice ? <p className="mb-3 text-xs font-semibold text-slate-600">{notice}</p> : null}
       <section className="space-y-3">
         {missions.map((mission) => (
           <article
@@ -116,6 +139,7 @@ export default function AdminMissionsPage() {
                 <input
                   checked={mission.active}
                   type="checkbox"
+                  disabled={submitting}
                   onChange={(event) => {
                     void handleToggleMission(mission, event.target.checked);
                   }}
@@ -129,6 +153,7 @@ export default function AdminMissionsPage() {
                 onClick={() => {
                   void handleDeleteMission(mission.id);
                 }}
+                disabled={submitting}
               >
                 삭제
               </button>

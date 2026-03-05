@@ -8,10 +8,36 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
 
+export class ApiRequestError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+  }
+}
+
+async function parseErrorMessage(response: Response): Promise<string> {
+  let detail = '';
+  try {
+    const body = (await response.json()) as { message?: string; error?: string };
+    detail = body.message ?? body.error ?? '';
+  } catch {
+    // JSON 응답이 아니면 기본 메시지를 사용한다.
+  }
+
+  if (!detail) {
+    return `요청이 실패했습니다. (${response.status})`;
+  }
+
+  return `${detail} (${response.status})`;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw new ApiRequestError(response.status, await parseErrorMessage(response));
   }
   return (await response.json()) as T;
 }
@@ -25,7 +51,7 @@ async function sendJson<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', bo
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`);
+    throw new ApiRequestError(response.status, await parseErrorMessage(response));
   }
 
   if (method === 'DELETE') {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { UserResponse } from '@workshop/types';
-import { workshopApi } from '../../lib/workshop-api';
+import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 
 const fallbackUsers: UserResponse[] = [
@@ -21,7 +21,7 @@ export default function AdminUsersPage() {
       const data = await workshopApi.getUsers();
       setUsers(data);
     } catch {
-      setNotice('사용자 조회에 실패했습니다.');
+      setNotice('사용자 조회에 실패했습니다. 로컬 데이터를 표시합니다.');
     }
   }
 
@@ -45,8 +45,8 @@ export default function AdminUsersPage() {
       });
       await loadUsers();
       setNotice('사용자를 추가했습니다.');
-    } catch {
-      setNotice('사용자 추가에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '사용자 추가에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -54,6 +54,10 @@ export default function AdminUsersPage() {
 
   async function handleSaveUser(user: UserResponse) {
     if (submitting) {
+      return;
+    }
+    if (!user.name.trim() || !user.team.trim() || !user.department.trim()) {
+      setNotice('이름, 팀, 부서를 모두 입력해주세요.');
       return;
     }
 
@@ -67,8 +71,8 @@ export default function AdminUsersPage() {
         role: user.role,
       });
       setNotice('사용자 정보를 저장했습니다.');
-    } catch {
-      setNotice('사용자 저장에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '사용자 저장에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -85,8 +89,8 @@ export default function AdminUsersPage() {
       await workshopApi.deleteUser(id);
       await loadUsers();
       setNotice('사용자를 삭제했습니다.');
-    } catch {
-      setNotice('사용자 삭제에 실패했습니다.');
+    } catch (error) {
+      setNotice(error instanceof ApiRequestError ? error.message : '사용자 삭제에 실패했습니다.');
     } finally {
       setSubmitting(false);
     }
@@ -107,7 +111,8 @@ export default function AdminUsersPage() {
       action={
         <button
           type="button"
-          className="rounded-full bg-primary px-3 py-2 text-xs font-bold text-white"
+          className="rounded-full bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          disabled={submitting}
           onClick={() => {
             void handleCreateUser();
           }}
@@ -123,6 +128,7 @@ export default function AdminUsersPage() {
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             placeholder="이름 또는 팀으로 검색..."
             value={search}
+            disabled={submitting}
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
@@ -134,6 +140,7 @@ export default function AdminUsersPage() {
                 <input
                   className="w-full rounded border border-slate-300 px-2 py-1 text-sm font-bold text-slate-900"
                   value={user.name}
+                  disabled={submitting}
                   onChange={(event) => {
                     setUsers((prev) =>
                       prev.map((item) => (item.id === user.id ? { ...item, name: event.target.value } : item)),
@@ -143,6 +150,7 @@ export default function AdminUsersPage() {
                 <input
                   className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs text-slate-500"
                   value={user.team}
+                  disabled={submitting}
                   onChange={(event) => {
                     setUsers((prev) =>
                       prev.map((item) => (item.id === user.id ? { ...item, team: event.target.value } : item)),
@@ -152,6 +160,7 @@ export default function AdminUsersPage() {
                 <input
                   className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs text-slate-500"
                   value={user.department}
+                  disabled={submitting}
                   onChange={(event) => {
                     setUsers((prev) =>
                       prev.map((item) =>
@@ -163,6 +172,7 @@ export default function AdminUsersPage() {
                 <select
                   className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs text-slate-500"
                   value={user.role}
+                  disabled={submitting}
                   onChange={(event) => {
                     setUsers((prev) =>
                       prev.map((item) => (item.id === user.id ? { ...item, role: event.target.value } : item)),
@@ -177,6 +187,7 @@ export default function AdminUsersPage() {
                 <button
                   type="button"
                   className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
+                  disabled={submitting}
                   onClick={() => {
                     void handleSaveUser(user);
                   }}
@@ -186,6 +197,7 @@ export default function AdminUsersPage() {
                 <button
                   type="button"
                   className="rounded-md border border-red-200 bg-red-50 py-1 text-[10px] font-semibold text-red-600"
+                  disabled={submitting}
                   onClick={() => {
                     void handleDeleteUser(user.id);
                   }}
