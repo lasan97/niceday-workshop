@@ -1,6 +1,8 @@
 package com.niceday.workshop.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -8,6 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -27,7 +31,28 @@ class WorkshopControllerTest {
     private MockMvc mockMvc;
 
     @Autowired
+    private WebApplicationContext webApplicationContext;
+
+    @Autowired
     private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUpAuthenticatedMockMvc() throws Exception {
+        String sessionToken = objectMapper.readTree(
+                        mockMvc.perform(post("/api/v1/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(new LoginPayload("admin", "admin1234"))))
+                                .andExpect(status().isOk())
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString())
+                .get("sessionToken")
+                .asText();
+
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .defaultRequest(get("/").cookie(new Cookie("workshop_session", sessionToken)))
+                .build();
+    }
 
     @Test
     void missionCrudFlowWorks() throws Exception {
@@ -278,5 +303,8 @@ class WorkshopControllerTest {
             String department,
             String role
     ) {
+    }
+
+    private record LoginPayload(String username, String password) {
     }
 }

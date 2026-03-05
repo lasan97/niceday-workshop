@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login'];
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/auth/logout'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,7 +11,8 @@ export function middleware(request: NextRequest) {
   }
 
   const role = request.cookies.get('workshop_role')?.value;
-  if (role !== 'PARTICIPANT' && role !== 'ADMIN') {
+  const sessionToken = request.cookies.get('workshop_session')?.value;
+  if ((!sessionToken) || (role !== 'PARTICIPANT' && role !== 'ADMIN')) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);

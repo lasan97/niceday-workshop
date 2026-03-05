@@ -2,7 +2,7 @@ import type {
   paths,
 } from '@workshop/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+const WORKSHOP_PROXY_BASE = '/api/workshop';
 
 type OverviewResponse = paths['/api/v1/workshop/overview']['get']['responses'][200]['content']['application/json'];
 type ScheduleListResponse = paths['/api/v1/workshop/schedules']['get']['responses'][200]['content']['application/json'];
@@ -72,7 +72,9 @@ async function parseErrorResponse(response: Response): Promise<{ message: string
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, { cache: 'no-store' });
+  const response = await fetch(`${WORKSHOP_PROXY_BASE}${path}`, {
+    cache: 'no-store',
+  });
   if (!response.ok) {
     const parsed = await parseErrorResponse(response);
     throw new ApiRequestError(response.status, parsed.message, parsed.fieldErrors);
@@ -81,7 +83,7 @@ async function getJson<T>(path: string): Promise<T> {
 }
 
 async function sendJson<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const response = await fetch(`${WORKSHOP_PROXY_BASE}${path}`, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
     body: body ? JSON.stringify(body) : undefined,
@@ -106,36 +108,36 @@ async function sendJson<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', bo
 }
 
 export const workshopApi = {
-  getOverview: () => getJson<OverviewResponse>('/api/v1/workshop/overview'),
-  getSchedules: () => getJson<ScheduleListResponse>('/api/v1/workshop/schedules'),
-  getMissions: () => getJson<MissionListResponse>('/api/v1/workshop/missions'),
-  getSessions: () => getJson<SessionListResponse>('/api/v1/workshop/sessions'),
-  getUsers: () => getJson<UserListResponse>('/api/v1/workshop/users'),
-  getTeams: () => getJson<TeamListResponse>('/api/v1/workshop/teams'),
+  getOverview: () => getJson<OverviewResponse>('/overview'),
+  getSchedules: () => getJson<ScheduleListResponse>('/schedules'),
+  getMissions: () => getJson<MissionListResponse>('/missions'),
+  getSessions: () => getJson<SessionListResponse>('/sessions'),
+  getUsers: () => getJson<UserListResponse>('/users'),
+  getTeams: () => getJson<TeamListResponse>('/teams'),
   createSchedule: (payload: ScheduleCreateRequest) =>
-    sendJson<ScheduleCreateResponse>('/api/v1/workshop/schedules', 'POST', payload),
+    sendJson<ScheduleCreateResponse>('/schedules', 'POST', payload),
   updateSchedule: (id: string, payload: ScheduleUpdateRequest) =>
-    sendJson<ScheduleUpdateResponse>(`/api/v1/workshop/schedules/${id}`, 'PATCH', payload),
-  deleteSchedule: (id: string) => sendJson<void>(`/api/v1/workshop/schedules/${id}`, 'DELETE'),
+    sendJson<ScheduleUpdateResponse>(`/schedules/${id}`, 'PATCH', payload),
+  deleteSchedule: (id: string) => sendJson<void>(`/schedules/${id}`, 'DELETE'),
   createMission: (payload: MissionCreateRequest) =>
-    sendJson<MissionCreateResponse>('/api/v1/workshop/missions', 'POST', payload),
+    sendJson<MissionCreateResponse>('/missions', 'POST', payload),
   updateMission: (id: string, payload: MissionUpdateRequest) =>
-    sendJson<MissionUpdateResponse>(`/api/v1/workshop/missions/${id}`, 'PATCH', payload),
-  deleteMission: (id: string) => sendJson<void>(`/api/v1/workshop/missions/${id}`, 'DELETE'),
+    sendJson<MissionUpdateResponse>(`/missions/${id}`, 'PATCH', payload),
+  deleteMission: (id: string) => sendJson<void>(`/missions/${id}`, 'DELETE'),
   createSession: (payload: SessionCreateRequest) =>
-    sendJson<SessionCreateResponse>('/api/v1/workshop/sessions', 'POST', payload),
+    sendJson<SessionCreateResponse>('/sessions', 'POST', payload),
   updateSession: (id: string, payload: SessionUpdateRequest) =>
-    sendJson<SessionUpdateResponse>(`/api/v1/workshop/sessions/${id}`, 'PATCH', payload),
-  deleteSession: (id: string) => sendJson<void>(`/api/v1/workshop/sessions/${id}`, 'DELETE'),
-  reorderSessions: (payload: SessionReorderRequest) => sendJson<void>('/api/v1/workshop/sessions/reorder', 'POST', payload),
+    sendJson<SessionUpdateResponse>(`/sessions/${id}`, 'PATCH', payload),
+  deleteSession: (id: string) => sendJson<void>(`/sessions/${id}`, 'DELETE'),
+  reorderSessions: (payload: SessionReorderRequest) => sendJson<void>('/sessions/reorder', 'POST', payload),
   createUser: (payload: UserCreateRequest) =>
-    sendJson<UserCreateResponse>('/api/v1/workshop/users', 'POST', payload),
+    sendJson<UserCreateResponse>('/users', 'POST', payload),
   updateUser: (id: string, payload: UserUpdateRequest) =>
-    sendJson<UserUpdateResponse>(`/api/v1/workshop/users/${id}`, 'PATCH', payload),
-  deleteUser: (id: string) => sendJson<void>(`/api/v1/workshop/users/${id}`, 'DELETE'),
-  resetUserPassword: (id: string) => sendJson<void>(`/api/v1/workshop/users/${id}/password/reset`, 'POST'),
-  createTeam: (payload: TeamCreateRequest) => sendJson<TeamCreateResponse>('/api/v1/workshop/teams', 'POST', payload),
+    sendJson<UserUpdateResponse>(`/users/${id}`, 'PATCH', payload),
+  deleteUser: (id: string) => sendJson<void>(`/users/${id}`, 'DELETE'),
+  resetUserPassword: (id: string) => sendJson<void>(`/users/${id}/password/reset`, 'POST'),
+  createTeam: (payload: TeamCreateRequest) => sendJson<TeamCreateResponse>('/teams', 'POST', payload),
   updateTeam: (id: string, payload: TeamUpdateRequest) =>
-    sendJson<TeamUpdateResponse>(`/api/v1/workshop/teams/${id}`, 'PATCH', payload),
-  deleteTeam: (id: string) => sendJson<void>(`/api/v1/workshop/teams/${id}`, 'DELETE'),
+    sendJson<TeamUpdateResponse>(`/teams/${id}`, 'PATCH', payload),
+  deleteTeam: (id: string) => sendJson<void>(`/teams/${id}`, 'DELETE'),
 };

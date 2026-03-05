@@ -22,11 +22,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: '인증에 실패했습니다.' }, { status: 401 });
   }
 
-  const authBody = (await authResponse.json()) as { role: 'ADMIN' | 'PARTICIPANT' };
+  const authBody = (await authResponse.json()) as { role: 'ADMIN' | 'PARTICIPANT'; sessionToken?: string };
+  if (!authBody.sessionToken) {
+    return NextResponse.json({ message: '인증 토큰 발급에 실패했습니다.' }, { status: 500 });
+  }
   const role = authBody.role;
 
   const response = NextResponse.json({ role });
   response.cookies.set('workshop_role', role, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+    path: '/',
+    maxAge: 60 * 60 * 8,
+  });
+  response.cookies.set('workshop_session', authBody.sessionToken, {
     httpOnly: true,
     sameSite: 'lax',
     secure: false,

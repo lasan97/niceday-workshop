@@ -3,6 +3,7 @@ package com.niceday.workshop.auth;
 import com.niceday.workshop.auth.dto.AuthLoginRequest;
 import com.niceday.workshop.auth.dto.AuthLoginResponse;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,5 +22,10 @@ public class AuthController {
     @PostMapping("/login")
     public AuthLoginResponse login(@Valid @RequestBody AuthLoginRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/logout")
+    public void logout(@CookieValue(name = "workshop_session", required = false) String sessionToken) {
+        authService.logout(sessionToken);
     }
 }

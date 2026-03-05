@@ -2,10 +2,12 @@ import type {
   paths,
 } from '@workshop/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+const WORKSHOP_PROXY_BASE = '/api/workshop';
 
 async function getJson<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, { cache: 'no-store' });
+  const response = await fetch(`${WORKSHOP_PROXY_BASE}${path}`, {
+    cache: 'no-store',
+  });
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status}`);
   }
@@ -18,8 +20,8 @@ type MissionListResponse = paths['/api/v1/workshop/missions']['get']['responses'
 type SessionListResponse = paths['/api/v1/workshop/sessions']['get']['responses'][200]['content']['application/json'];
 
 export const workshopApi = {
-  getOverview: () => getJson<OverviewResponse>('/api/v1/workshop/overview'),
-  getSchedules: () => getJson<ScheduleListResponse>('/api/v1/workshop/schedules'),
-  getMissions: () => getJson<MissionListResponse>('/api/v1/workshop/missions'),
-  getSessions: () => getJson<SessionListResponse>('/api/v1/workshop/sessions'),
+  getOverview: () => getJson<OverviewResponse>('/overview'),
+  getSchedules: () => getJson<ScheduleListResponse>('/schedules'),
+  getMissions: () => getJson<MissionListResponse>('/missions'),
+  getSessions: () => getJson<SessionListResponse>('/sessions'),
 };
