@@ -34,4 +34,19 @@ gradle bootRun --args='--spring.profiles.active=dev'
 - `GET /api/v1/workshop/users`
 - `POST /api/v1/auth/login`
 
+## Write API (v1)
+
+- `POST /api/v1/workshop/schedules`
+- `PATCH /api/v1/workshop/schedules/{id}`
+- `DELETE /api/v1/workshop/schedules/{id}`
+- `POST /api/v1/workshop/missions`
+- `PATCH /api/v1/workshop/missions/{id}`
+- `DELETE /api/v1/workshop/missions/{id}`
+- `POST /api/v1/workshop/sessions`
+- `PATCH /api/v1/workshop/sessions/{id}`
+- `DELETE /api/v1/workshop/sessions/{id}`
+- `POST /api/v1/workshop/users`
+- `PATCH /api/v1/workshop/users/{id}`
+- `DELETE /api/v1/workshop/users/{id}`
+
 OpenAPI 초안: `src/main/resources/openapi/workshop-api.yaml`
