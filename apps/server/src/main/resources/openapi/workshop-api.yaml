@@ -22,8 +22,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthLoginResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
         '401':
           description: UNAUTHORIZED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/overview:
     get:
       summary: 워크샵 개요 통계 조회
@@ -61,6 +71,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ScheduleItemResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/schedules/{id}:
     patch:
       summary: 일정 수정
@@ -83,6 +99,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ScheduleItemResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
     delete:
       summary: 일정 삭제
       parameters:
@@ -94,6 +122,12 @@ paths:
       responses:
         '204':
           description: NO CONTENT
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/missions:
     get:
       summary: 미션 목록 조회
@@ -121,6 +155,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MissionResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/missions/{id}:
     patch:
       summary: 미션 수정
@@ -143,6 +183,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MissionResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
     delete:
       summary: 미션 삭제
       parameters:
@@ -154,6 +206,12 @@ paths:
       responses:
         '204':
           description: NO CONTENT
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/sessions:
     get:
       summary: 세션 목록 조회
@@ -181,6 +239,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/sessions/{id}:
     patch:
       summary: 세션 수정
@@ -203,6 +267,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
     delete:
       summary: 세션 삭제
       parameters:
@@ -214,6 +290,12 @@ paths:
       responses:
         '204':
           description: NO CONTENT
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/users:
     get:
       summary: 사용자 목록 조회
@@ -241,6 +323,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/users/{id}:
     patch:
       summary: 사용자 수정
@@ -263,6 +351,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
     delete:
       summary: 사용자 삭제
       parameters:
@@ -274,8 +374,24 @@ paths:
       responses:
         '204':
           description: NO CONTENT
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
 components:
   schemas:
+    ApiErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: string
+      required: [message, fieldErrors]
     OverviewResponse:
       type: object
       properties:

@@ -62,5 +62,8 @@ OpenAPI 초안: `src/main/resources/openapi/workshop-api.yaml`
 
 ## 기본 로그인 계정
 
+인증 계정은 설정 파일이 아니라 DB 테이블(`auth_account`)에서 조회합니다.
+기본 계정은 Flyway 마이그레이션(`src/main/resources/db/migration/V3__add_auth_accounts.sql`)으로 생성됩니다.
+
 - `ADMIN`: `admin / admin1234`
 - `PARTICIPANT`: `user01 / user1234`

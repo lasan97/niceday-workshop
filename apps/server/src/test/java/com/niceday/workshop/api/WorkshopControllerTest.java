@@ -126,7 +126,21 @@ class WorkshopControllerTest {
     @Test
     void deleteUnknownMissionReturns404() throws Exception {
         mockMvc.perform(delete("/api/v1/workshop/missions/{id}", "mis-unknown"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("미션을 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.fieldErrors").isMap());
+    }
+
+    @Test
+    void createScheduleWithBlankTitleReturnsFieldErrors() throws Exception {
+        String invalidBody = objectMapper.writeValueAsString(new SchedulePayload("1일차", "09:00", "10:00", " ", "A홀"));
+
+        mockMvc.perform(post("/api/v1/workshop/schedules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("입력값을 확인해주세요."))
+                .andExpect(jsonPath("$.fieldErrors.title").exists());
     }
 
     private record MissionPayload(String title, int points, boolean active, int pendingApprovals) {
