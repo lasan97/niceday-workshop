@@ -31,21 +31,21 @@ export default function AdminHomePage() {
   }, []);
 
   const stats = [
-    { title: 'Active Missions', value: String(overview.activeMissions), note: 'Includes all active campaigns' },
-    { title: 'Upcoming Sessions', value: String(overview.upcomingSessions), note: 'Next in 2h' },
-    { title: 'Total Users', value: String(overview.totalUsers), note: 'Checked-in attendees included' },
-    { title: 'Schedules', value: String(overview.totalSchedules), note: 'Today and tomorrow blocks' },
+    { title: '활성 미션', value: String(overview.activeMissions), note: '현재 진행 중인 미션 수' },
+    { title: '예정 세션', value: String(overview.upcomingSessions), note: '다음 세션 2시간 후 시작' },
+    { title: '전체 사용자', value: String(overview.totalUsers), note: '체크인 인원 포함' },
+    { title: '일정 블록', value: String(overview.totalSchedules), note: '오늘/내일 일정 포함' },
   ];
 
   const modules = [
-    { href: '/schedule', title: 'Schedule Management', desc: 'Manage daily events and timing' },
-    { href: '/missions', title: 'Mission Management', desc: 'Approve and track team missions' },
-    { href: '/sessions', title: 'Conference Sessions', desc: 'Manage speakers and Q and A' },
-    { href: '/users', title: 'User Management', desc: 'Handle attendee access and teams' },
+    { href: '/schedule', title: '일정 관리', desc: '일별 이벤트와 시간표를 관리합니다.' },
+    { href: '/missions', title: '미션 관리', desc: '팀 미션 승인과 현황을 관리합니다.' },
+    { href: '/sessions', title: '세션 관리', desc: '발표 세션과 질문 현황을 관리합니다.' },
+    { href: '/users', title: '사용자 관리', desc: '참가자 계정과 팀 배정을 관리합니다.' },
   ];
 
   return (
-    <AdminScreen title="Nice Day Admin" subtitle="Workshop Overview · Gangneung Event Management">
+    <AdminScreen title="나이스데이 관리자" subtitle="워크샵 개요 · 강릉 행사 운영">
       <section className="mb-5 grid grid-cols-2 gap-3">
         {stats.map((stat) => (
           <article key={stat.title} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -57,7 +57,7 @@ export default function AdminHomePage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-bold text-slate-700">Management Modules</h2>
+        <h2 className="text-sm font-bold text-slate-700">관리 모듈</h2>
         {modules.map((module) => (
           <Link
             key={module.title}

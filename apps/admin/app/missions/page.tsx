@@ -6,9 +6,9 @@ import { workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 
 const fallbackMissions: MissionResponse[] = [
-  { id: 'mis-local-1', title: 'Find the Hidden Treasure', points: 50, active: true, pendingApprovals: 1 },
-  { id: 'mis-local-2', title: 'Group Pyramid Photo', points: 30, active: true, pendingApprovals: 2 },
-  { id: 'mis-local-3', title: 'Coffee Break Trivia', points: 10, active: false, pendingApprovals: 0 },
+  { id: 'mis-local-1', title: '숨은 보물 찾기', points: 50, active: true, pendingApprovals: 1 },
+  { id: 'mis-local-2', title: '팀 피라미드 사진', points: 30, active: true, pendingApprovals: 2 },
+  { id: 'mis-local-3', title: '커피 브레이크 퀴즈', points: 10, active: false, pendingApprovals: 0 },
 ];
 
 export default function AdminMissionsPage() {
@@ -31,9 +31,9 @@ export default function AdminMissionsPage() {
 
   return (
     <AdminScreen
-      title="Mission Management"
-      subtitle="Current Missions and Photo Submissions"
-      action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">+ Add</button>}
+      title="미션 관리"
+      subtitle="미션과 사진 제출 관리"
+      action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">+ 추가</button>}
     >
       <section className="space-y-3">
         {missions.map((mission) => (
@@ -48,10 +48,10 @@ export default function AdminMissionsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">{mission.title}</h2>
-                <p className="text-xs text-slate-500">{mission.points} Points</p>
+                <p className="text-xs text-slate-500">{mission.points}점</p>
               </div>
               <label className="flex items-center gap-2 text-xs text-slate-500">
-                Active
+                활성
                 <input defaultChecked={mission.active} type="checkbox" />
               </label>
             </div>
@@ -61,9 +61,9 @@ export default function AdminMissionsPage() {
 
       <section className="mt-6">
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-700">Photo Submissions</h3>
+          <h3 className="text-sm font-bold text-slate-700">사진 제출</h3>
           <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">
-            {pending} Pending
+            대기 {pending}건
           </span>
         </div>
       </section>

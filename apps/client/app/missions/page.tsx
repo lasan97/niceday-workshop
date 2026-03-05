@@ -6,9 +6,9 @@ import { workshopApi } from '../../lib/workshop-api';
 import { ClientScreen } from '../components/ClientScreen';
 
 const fallbackMissions: MissionResponse[] = [
-  { id: 'mis-local-1', title: 'Gyeongpo Beach Snap', points: 200, active: true, pendingApprovals: 0 },
-  { id: 'mis-local-2', title: 'Team Slogan Shout', points: 150, active: false, pendingApprovals: 0 },
-  { id: 'mis-local-3', title: 'Local Delicacy Hunt', points: 300, active: true, pendingApprovals: 0 },
+  { id: 'mis-local-1', title: '경포 해변 인증샷', points: 200, active: true, pendingApprovals: 0 },
+  { id: 'mis-local-2', title: '팀 구호 외치기', points: 150, active: false, pendingApprovals: 0 },
+  { id: 'mis-local-3', title: '로컬 맛집 미션', points: 300, active: true, pendingApprovals: 0 },
 ];
 
 export default function MissionsPage() {
@@ -28,10 +28,10 @@ export default function MissionsPage() {
   }, []);
 
   return (
-    <ClientScreen title="Team Building Missions" subtitle="Current Leaderboard">
+    <ClientScreen title="팀 빌딩 미션" subtitle="현재 리더보드">
       <section className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
-        <p className="text-sm font-bold text-slate-900">1st Team Awesome · 1450 pts</p>
-        <p className="mt-1 text-sm text-primary">2nd Nice Explorers (YOU) · 1200 pts</p>
+        <p className="text-sm font-bold text-slate-900">1위 팀 어썸 · 1450점</p>
+        <p className="mt-1 text-sm text-primary">2위 나이스 익스플로러(우리 팀) · 1200점</p>
       </section>
 
       <section className="space-y-3 pb-4">
@@ -51,10 +51,10 @@ export default function MissionsPage() {
               </div>
               {mission.active ? (
                 <button className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white" type="button">
-                  Verify
+                  인증하기
                 </button>
               ) : (
-                <span className="rounded-full bg-emerald-500 px-2 py-1 text-[10px] font-bold text-white">DONE</span>
+                <span className="rounded-full bg-emerald-500 px-2 py-1 text-[10px] font-bold text-white">완료</span>
               )}
             </div>
           </article>

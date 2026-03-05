@@ -8,19 +8,19 @@ import { AdminScreen } from '../components/AdminScreen';
 const fallbackSchedules: ScheduleItemResponse[] = [
   {
     id: 'sch-local-1',
-    day: 'DAY_1',
+    day: '1일차',
     startsAt: '09:00',
     endsAt: '10:30',
-    title: 'Registration and Welcome',
-    location: 'Grand Lobby',
+    title: '등록 및 환영',
+    location: '그랜드 로비',
   },
   {
     id: 'sch-local-2',
-    day: 'DAY_2',
+    day: '2일차',
     startsAt: '09:00',
     endsAt: '12:00',
-    title: 'Team Building Mission',
-    location: 'Gangneung Beach',
+    title: '팀 빌딩 미션',
+    location: '강릉 해변',
   },
 ];
 
@@ -30,7 +30,7 @@ function ScheduleBlock({ day, items }: { day: string; items: ScheduleItemRespons
       <div className="flex items-center justify-between border-b border-slate-200 pb-2">
         <h2 className="text-sm font-bold text-primary">{day}</h2>
         <button className="text-xs font-semibold text-primary" type="button">
-          + Add Event
+          + 이벤트 추가
         </button>
       </div>
 
@@ -82,9 +82,9 @@ export default function AdminSchedulePage() {
 
   return (
     <AdminScreen
-      title="Schedule Management"
-      subtitle="Event Itinerary"
-      action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">Broadcast</button>}
+      title="일정 관리"
+      subtitle="행사 일정 관리"
+      action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">공지 발송</button>}
     >
       <div className="space-y-6">
         {Object.entries(grouped).map(([day, items]) => (

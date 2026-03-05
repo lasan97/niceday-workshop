@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const items = [
-  { href: '/', label: 'Dashboard' },
-  { href: '/schedule', label: 'Schedule' },
-  { href: '/missions', label: 'Missions' },
-  { href: '/sessions', label: 'Sessions' },
-  { href: '/users', label: 'Users' },
+  { href: '/', label: '대시보드' },
+  { href: '/schedule', label: '일정' },
+  { href: '/missions', label: '미션' },
+  { href: '/sessions', label: '세션' },
+  { href: '/users', label: '사용자' },
 ];
 
 export function AdminNav() {

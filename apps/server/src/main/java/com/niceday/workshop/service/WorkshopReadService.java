@@ -18,34 +18,34 @@ public class WorkshopReadService {
 
     public List<ScheduleItemResponse> getSchedules() {
         return List.of(
-                new ScheduleItemResponse("sch-1", "DAY_1", "09:00", "10:30", "Registration & Welcome", "Grand Lobby"),
-                new ScheduleItemResponse("sch-2", "DAY_1", "10:30", "12:30", "Keynote: Future Vision", "Main Hall A"),
-                new ScheduleItemResponse("sch-3", "DAY_2", "09:00", "12:00", "Team Building Mission", "Gangneung Beach")
+                new ScheduleItemResponse("sch-1", "1일차", "09:00", "10:30", "등록 및 환영", "그랜드 로비"),
+                new ScheduleItemResponse("sch-2", "1일차", "10:30", "12:30", "키노트: 미래 비전", "메인홀 A"),
+                new ScheduleItemResponse("sch-3", "2일차", "09:00", "12:00", "팀 빌딩 미션", "강릉 해변")
         );
     }
 
     public List<MissionResponse> getMissions() {
         return List.of(
-                new MissionResponse("mis-1", "Find the Hidden Treasure", 50, true, 1),
-                new MissionResponse("mis-2", "Group Pyramid Photo", 30, true, 2),
-                new MissionResponse("mis-3", "Coffee Break Trivia", 10, false, 0)
+                new MissionResponse("mis-1", "숨은 보물 찾기", 50, true, 1),
+                new MissionResponse("mis-2", "팀 피라미드 사진", 30, true, 2),
+                new MissionResponse("mis-3", "커피 브레이크 퀴즈", 10, false, 0)
         );
     }
 
     public List<SessionResponse> getSessions() {
         return List.of(
-                new SessionResponse("ses-1", "TEAM ALPHA", "The Future of AI in the Workplace", "Jane Doe", "Grand Hall A", true, 5),
-                new SessionResponse("ses-2", "TEAM BETA", "Sustainable Event Management", "Michael Smith", "Ocean Room 2", false, 0),
-                new SessionResponse("ses-3", "TEAM GAMMA", "Scaling Up Microservices", "Sarah Connor", "Grand Hall B", true, 12)
+                new SessionResponse("ses-1", "알파팀", "업무 환경에서의 AI 미래", "제인 도", "그랜드홀 A", true, 5),
+                new SessionResponse("ses-2", "베타팀", "지속 가능한 행사 운영", "마이클 스미스", "오션룸 2", false, 0),
+                new SessionResponse("ses-3", "감마팀", "마이크로서비스 확장 전략", "사라 코너", "그랜드홀 B", true, 12)
         );
     }
 
     public List<UserResponse> getUsers() {
         return List.of(
-                new UserResponse("usr-1", "John Doe", "Team Alpha", "Product", "PARTICIPANT"),
-                new UserResponse("usr-2", "Sarah Jenkins", "Team Beta", "Marketing", "PARTICIPANT"),
-                new UserResponse("usr-3", "Michael Kim", "Unassigned", "Engineering", "PARTICIPANT"),
-                new UserResponse("usr-4", "Emily Park", "Team Gamma", "Sales", "ADMIN")
+                new UserResponse("usr-1", "홍길동", "알파팀", "제품팀", "PARTICIPANT"),
+                new UserResponse("usr-2", "김수진", "베타팀", "마케팅팀", "PARTICIPANT"),
+                new UserResponse("usr-3", "이민호", "미배정", "엔지니어링팀", "PARTICIPANT"),
+                new UserResponse("usr-4", "박은지", "감마팀", "영업팀", "ADMIN")
         );
     }
 }

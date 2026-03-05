@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Workshop Client',
+  title: '워크샵 클라이언트',
   description: '참가자용 워크샵 앱',
 };
 

@@ -31,7 +31,7 @@ export default function AdminLoginPage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center bg-slate-100 px-6">
       <form className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={onSubmit}>
-        <h1 className="text-2xl font-bold text-slate-900">Admin Login</h1>
+        <h1 className="text-2xl font-bold text-slate-900">관리자 로그인</h1>
         <p className="mt-2 text-sm text-slate-500">운영진 계정으로 로그인하세요.</p>
         <div className="mt-5 space-y-3">
           <input

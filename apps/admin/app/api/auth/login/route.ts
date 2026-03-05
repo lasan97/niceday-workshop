@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as { username?: string; password?: string };
 
   if (body.username !== ADMIN_ID || body.password !== ADMIN_PASSWORD) {
-    return NextResponse.json({ message: 'invalid admin credentials' }, { status: 401 });
+    return NextResponse.json({ message: '관리자 계정 정보가 올바르지 않습니다.' }, { status: 401 });
   }
 
   const response = NextResponse.json({ role: 'ADMIN' });

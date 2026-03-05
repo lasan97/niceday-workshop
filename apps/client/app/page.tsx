@@ -16,10 +16,10 @@ const fallbackOverview: OverviewResponse = {
 
 const fallbackSession: SessionResponse = {
   id: 'ses-local',
-  team: 'TEAM ALPHA',
-  title: 'Beachside Relay Race',
-  speaker: 'Field Host',
-  room: 'Gyeongpo Beach',
+  team: '알파팀',
+  title: '해변 릴레이 레이스',
+  speaker: '현장 진행자',
+  room: '경포 해변',
   liveQa: true,
   pendingQuestions: 0,
 };
@@ -59,18 +59,18 @@ export default function ClientHomePage() {
 
       <section className="px-4 pb-4">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-600 via-primary to-cyan-500 p-6 text-white shadow-lg">
-          <p className="text-xs font-semibold uppercase tracking-wider text-white/80">Day 1</p>
-          <h1 className="mt-2 text-3xl font-bold leading-tight">Nice Day Gangneung Workshop</h1>
-          <p className="mt-2 text-sm text-white/80">Refresh and Reconnect</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-white/80">1일차</p>
+          <h1 className="mt-2 text-3xl font-bold leading-tight">나이스데이 강릉 워크샵</h1>
+          <p className="mt-2 text-sm text-white/80">다시 연결되고, 더 가까워지는 시간</p>
         </div>
       </section>
 
       <section className="px-4 py-2">
-        <h2 className="mb-3 text-lg font-bold text-slate-900">Current Session</h2>
+        <h2 className="mb-3 text-lg font-bold text-slate-900">현재 세션</h2>
         <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-2 flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-            <span className="text-xs font-bold uppercase tracking-wide text-red-500">In Progress</span>
+            <span className="text-xs font-bold uppercase tracking-wide text-red-500">진행중</span>
           </div>
           <h3 className="text-base font-bold text-slate-900">{currentSession.title}</h3>
           <p className="mt-1 text-sm text-slate-500">{currentSession.room}</p>
@@ -81,19 +81,19 @@ export default function ClientHomePage() {
       </section>
 
       <section className="px-4 py-4">
-        <h2 className="mb-3 text-lg font-bold text-slate-900">Quick Access</h2>
+        <h2 className="mb-3 text-lg font-bold text-slate-900">빠른 이동</h2>
         <div className="grid grid-cols-2 gap-3">
           <Link href="/schedule" className="rounded-xl bg-primary/10 p-4">
-            <p className="text-sm font-bold text-slate-900">Today Schedule</p>
-            <p className="mt-1 text-xs text-slate-500">{overview.totalSchedules} schedule blocks</p>
+            <p className="text-sm font-bold text-slate-900">오늘 일정</p>
+            <p className="mt-1 text-xs text-slate-500">총 {overview.totalSchedules}개 일정 블록</p>
           </Link>
           <Link href="/sessions" className="rounded-xl bg-primary/10 p-4">
-            <p className="text-sm font-bold text-slate-900">Team Conference</p>
-            <p className="mt-1 text-xs text-slate-500">{overview.upcomingSessions} sessions upcoming</p>
+            <p className="text-sm font-bold text-slate-900">팀 컨퍼런스</p>
+            <p className="mt-1 text-xs text-slate-500">예정 세션 {overview.upcomingSessions}개</p>
           </Link>
           <Link href="/missions" className="col-span-2 rounded-xl bg-primary/10 p-4">
-            <p className="text-sm font-bold text-slate-900">Team Mission</p>
-            <p className="mt-1 text-xs text-slate-500">{overview.activeMissions} missions active</p>
+            <p className="text-sm font-bold text-slate-900">팀 미션</p>
+            <p className="mt-1 text-xs text-slate-500">진행중 미션 {overview.activeMissions}개</p>
           </Link>
         </div>
       </section>

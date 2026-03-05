@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const items = [
-  { href: '/', label: 'Home' },
-  { href: '/schedule', label: 'Schedule' },
-  { href: '/missions', label: 'Missions' },
-  { href: '/sessions', label: 'Sessions' },
+  { href: '/', label: '홈' },
+  { href: '/schedule', label: '일정' },
+  { href: '/missions', label: '미션' },
+  { href: '/sessions', label: '세션' },
 ];
 
 export function ClientBottomNav() {
