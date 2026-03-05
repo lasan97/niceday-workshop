@@ -17,7 +17,13 @@ public class UserEntity {
     private String name;
 
     @Column(length = 64, nullable = false)
+    private String username;
+
+    @Column(length = 64, nullable = false)
     private String team;
+
+    @Column(name = "workshop_team_id", length = 64)
+    private String workshopTeamId;
 
     @Column(length = 64, nullable = false)
     private String department;
@@ -41,12 +47,28 @@ public class UserEntity {
         this.name = name;
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     public String getTeam() {
         return team;
     }
 
     public void setTeam(String team) {
         this.team = team;
+    }
+
+    public String getWorkshopTeamId() {
+        return workshopTeamId;
+    }
+
+    public void setWorkshopTeamId(String workshopTeamId) {
+        this.workshopTeamId = workshopTeamId;
     }
 
     public String getDepartment() {

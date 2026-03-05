@@ -175,6 +175,9 @@ export default function AdminSchedulePage() {
     }, {});
   }, [schedules]);
 
+  const dayEntries = Object.entries(grouped);
+  const hasSchedules = dayEntries.length > 0;
+
   return (
     <AdminScreen
       title="일정 관리"
@@ -187,7 +190,35 @@ export default function AdminSchedulePage() {
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
       <div className="space-y-6">
-        {Object.entries(grouped).map(([day, items]) => (
+        {!hasSchedules ? (
+          <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center shadow-sm">
+            <p className="text-sm font-semibold text-slate-700">등록된 일정이 없습니다.</p>
+            <p className="mt-1 text-xs text-slate-500">아래 버튼으로 첫 일정을 추가하세요.</p>
+            <div className="mt-3 flex justify-center gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                disabled={submitting}
+                onClick={() => {
+                  void handleCreate('1일차');
+                }}
+              >
+                1일차 추가
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                disabled={submitting}
+                onClick={() => {
+                  void handleCreate('2일차');
+                }}
+              >
+                2일차 추가
+              </button>
+            </div>
+          </section>
+        ) : null}
+        {dayEntries.map(([day, items]) => (
           <section key={day} className="space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <h2 className="text-sm font-bold text-primary">{day}</h2>

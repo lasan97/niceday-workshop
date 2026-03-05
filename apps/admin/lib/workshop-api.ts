@@ -28,6 +28,11 @@ type UserCreateRequest = paths['/api/v1/workshop/users']['post']['requestBody'][
 type UserCreateResponse = paths['/api/v1/workshop/users']['post']['responses'][201]['content']['application/json'];
 type UserUpdateRequest = paths['/api/v1/workshop/users/{id}']['patch']['requestBody']['content']['application/json'];
 type UserUpdateResponse = paths['/api/v1/workshop/users/{id}']['patch']['responses'][200]['content']['application/json'];
+type TeamListResponse = paths['/api/v1/workshop/teams']['get']['responses'][200]['content']['application/json'];
+type TeamCreateRequest = paths['/api/v1/workshop/teams']['post']['requestBody']['content']['application/json'];
+type TeamCreateResponse = paths['/api/v1/workshop/teams']['post']['responses'][201]['content']['application/json'];
+type TeamUpdateRequest = paths['/api/v1/workshop/teams/{id}']['patch']['requestBody']['content']['application/json'];
+type TeamUpdateResponse = paths['/api/v1/workshop/teams/{id}']['patch']['responses'][200]['content']['application/json'];
 
 export class ApiRequestError extends Error {
   status: number;
@@ -87,7 +92,12 @@ async function sendJson<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', bo
     throw new ApiRequestError(response.status, parsed.message, parsed.fieldErrors);
   }
 
-  if (method === 'DELETE') {
+  if (method === 'DELETE' || response.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
     return undefined as T;
   }
 
@@ -100,6 +110,7 @@ export const workshopApi = {
   getMissions: () => getJson<MissionListResponse>('/api/v1/workshop/missions'),
   getSessions: () => getJson<SessionListResponse>('/api/v1/workshop/sessions'),
   getUsers: () => getJson<UserListResponse>('/api/v1/workshop/users'),
+  getTeams: () => getJson<TeamListResponse>('/api/v1/workshop/teams'),
   createSchedule: (payload: ScheduleCreateRequest) =>
     sendJson<ScheduleCreateResponse>('/api/v1/workshop/schedules', 'POST', payload),
   updateSchedule: (id: string, payload: ScheduleUpdateRequest) =>
@@ -120,4 +131,9 @@ export const workshopApi = {
   updateUser: (id: string, payload: UserUpdateRequest) =>
     sendJson<UserUpdateResponse>(`/api/v1/workshop/users/${id}`, 'PATCH', payload),
   deleteUser: (id: string) => sendJson<void>(`/api/v1/workshop/users/${id}`, 'DELETE'),
+  resetUserPassword: (id: string) => sendJson<void>(`/api/v1/workshop/users/${id}/password/reset`, 'POST'),
+  createTeam: (payload: TeamCreateRequest) => sendJson<TeamCreateResponse>('/api/v1/workshop/teams', 'POST', payload),
+  updateTeam: (id: string, payload: TeamUpdateRequest) =>
+    sendJson<TeamUpdateResponse>(`/api/v1/workshop/teams/${id}`, 'PATCH', payload),
+  deleteTeam: (id: string) => sendJson<void>(`/api/v1/workshop/teams/${id}`, 'DELETE'),
 };

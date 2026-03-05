@@ -7,6 +7,8 @@ import com.niceday.workshop.api.dto.ScheduleItemResponse;
 import com.niceday.workshop.api.dto.ScheduleUpsertRequest;
 import com.niceday.workshop.api.dto.SessionResponse;
 import com.niceday.workshop.api.dto.SessionUpsertRequest;
+import com.niceday.workshop.api.dto.TeamResponse;
+import com.niceday.workshop.api.dto.TeamUpsertRequest;
 import com.niceday.workshop.api.dto.UserResponse;
 import com.niceday.workshop.api.dto.UserUpsertRequest;
 import com.niceday.workshop.service.WorkshopService;
@@ -110,6 +112,28 @@ public class WorkshopController {
         return workshopService.getUsers();
     }
 
+    @GetMapping("/teams")
+    public List<TeamResponse> getTeams() {
+        return workshopService.getTeams();
+    }
+
+    @PostMapping("/teams")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TeamResponse createTeam(@Valid @RequestBody TeamUpsertRequest request) {
+        return workshopService.createTeam(request);
+    }
+
+    @PatchMapping("/teams/{id}")
+    public TeamResponse updateTeam(@PathVariable String id, @Valid @RequestBody TeamUpsertRequest request) {
+        return workshopService.updateTeam(id, request);
+    }
+
+    @DeleteMapping("/teams/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTeam(@PathVariable String id) {
+        workshopService.deleteTeam(id);
+    }
+
     @PostMapping("/users")
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse createUser(@Valid @RequestBody UserUpsertRequest request) {
@@ -125,5 +149,11 @@ public class WorkshopController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable String id) {
         workshopService.deleteUser(id);
+    }
+
+    @PostMapping("/users/{id}/password/reset")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetUserPassword(@PathVariable String id) {
+        workshopService.resetUserPassword(id);
     }
 }

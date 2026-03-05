@@ -329,6 +329,108 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponse'
+        '409':
+          description: CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/teams:
+    get:
+      summary: 워크샵 팀 목록 조회
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamResponse'
+    post:
+      summary: 워크샵 팀 생성
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamUpsertRequest'
+      responses:
+        '201':
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '409':
+          description: CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/teams/{id}:
+    patch:
+      summary: 워크샵 팀 수정
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamUpsertRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+        '409':
+          description: CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+    delete:
+      summary: 워크샵 팀 삭제
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: NO CONTENT
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/users/{id}:
     patch:
       summary: 사용자 수정
@@ -363,8 +465,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponse'
+        '409':
+          description: CONFLICT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
     delete:
       summary: 사용자 삭제
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: NO CONTENT
+        '404':
+          description: NOT FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/users/{id}/password/reset:
+    post:
+      summary: 사용자 비밀번호 초기화
       parameters:
         - name: id
           in: path
@@ -467,19 +593,41 @@ components:
       type: object
       properties:
         id: { type: string }
+        username: { type: string }
         name: { type: string }
         team: { type: string }
+        workshopTeamId:
+          type: string
+          nullable: true
+        workshopTeamName:
+          type: string
+          nullable: true
         department: { type: string }
         role: { type: string }
-      required: [id, name, team, department, role]
+      required: [id, username, name, team, department, role]
     UserUpsertRequest:
       type: object
       properties:
+        username: { type: string }
         name: { type: string }
         team: { type: string }
+        workshopTeamId:
+          type: string
+          nullable: true
         department: { type: string }
         role: { type: string }
-      required: [name, team, department, role]
+      required: [username, name, team, department, role]
+    TeamResponse:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+      required: [id, name]
+    TeamUpsertRequest:
+      type: object
+      properties:
+        name: { type: string }
+      required: [name]
     AuthLoginRequest:
       type: object
       properties:

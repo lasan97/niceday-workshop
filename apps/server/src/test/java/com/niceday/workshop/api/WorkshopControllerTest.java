@@ -98,9 +98,16 @@ class WorkshopControllerTest {
                         mockMvc.perform(post("/api/v1/workshop/users")
                                         .contentType(MediaType.APPLICATION_JSON)
                                         .content(objectMapper.writeValueAsString(
-                                                new UserPayload("테스트 사용자", "테스트팀", "테스트부서", "PARTICIPANT"))))
+                                                new UserPayload(
+                                                        "test-user",
+                                                        "테스트 사용자",
+                                                        "표기팀",
+                                                        null,
+                                                        "테스트부서",
+                                                        "PARTICIPANT"))))
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.name").value("테스트 사용자"))
+                                .andExpect(jsonPath("$.username").value("test-user"))
                                 .andReturn()
                                 .getResponse()
                                 .getContentAsString())
@@ -120,6 +127,52 @@ class WorkshopControllerTest {
         mockMvc.perform(delete("/api/v1/workshop/sessions/{id}", sessionId))
                 .andExpect(status().isNoContent());
         mockMvc.perform(delete("/api/v1/workshop/users/{id}", userId))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void teamCrudAndUserPasswordResetWork() throws Exception {
+        String teamId = objectMapper.readTree(
+                        mockMvc.perform(post("/api/v1/workshop/teams")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(new TeamPayload("신규 워크샵팀"))))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.name").value("신규 워크샵팀"))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString())
+                .get("id")
+                .asText();
+
+        String userId = objectMapper.readTree(
+                        mockMvc.perform(post("/api/v1/workshop/users")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(
+                                                new UserPayload(
+                                                        "reset-target",
+                                                        "초기화 대상",
+                                                        "표기팀",
+                                                        teamId,
+                                                        "운영팀",
+                                                        "PARTICIPANT"))))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.workshopTeamId").value(teamId))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString())
+                .get("id")
+                .asText();
+
+        mockMvc.perform(post("/api/v1/workshop/users/{id}/password/reset", userId))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(patch("/api/v1/workshop/teams/{id}", teamId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TeamPayload("워크샵팀 수정"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("워크샵팀 수정"));
+
+        mockMvc.perform(delete("/api/v1/workshop/teams/{id}", teamId))
                 .andExpect(status().isNoContent());
     }
 
@@ -159,6 +212,16 @@ class WorkshopControllerTest {
     ) {
     }
 
-    private record UserPayload(String name, String team, String department, String role) {
+    private record TeamPayload(String name) {
+    }
+
+    private record UserPayload(
+            String username,
+            String name,
+            String team,
+            String workshopTeamId,
+            String department,
+            String role
+    ) {
     }
 }

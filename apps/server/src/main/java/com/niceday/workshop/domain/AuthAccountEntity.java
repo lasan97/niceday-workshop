@@ -22,6 +22,9 @@ public class AuthAccountEntity {
     @Column(length = 32, nullable = false)
     private String role;
 
+    @Column(name = "user_id", length = 64, unique = true)
+    private String userId;
+
     public String getId() {
         return id;
     }
@@ -52,5 +55,13 @@ public class AuthAccountEntity {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }
