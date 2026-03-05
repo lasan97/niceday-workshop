@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mission Content Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden max-w-md mx-auto shadow-lg bg-white dark:bg-slate-900">
+<!-- Top App Bar -->
+<div class="flex items-center p-4 pb-2 justify-between border-b border-slate-200 dark:border-slate-800">
+<button class="flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold leading-tight flex-1 text-center pr-12">Mission Management</h2>
+</div>
+<!-- Add Button -->
+<div class="flex px-4 py-4">
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 bg-primary hover:bg-primary/90 transition-colors text-white text-base font-bold leading-normal">
+<span class="material-symbols-outlined mr-2 text-[20px]">add</span>
+<span class="truncate">Add New Mission</span>
+</button>
+</div>
+<!-- Current Missions -->
+<h3 class="text-lg font-bold leading-tight px-4 pb-3 pt-2">Current Missions</h3>
+<div class="flex flex-col gap-3 px-4 pb-6">
+<!-- Mission Card 1 -->
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700/50 flex flex-col gap-3">
+<div class="flex items-center gap-4 justify-between">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary">
+<span class="material-symbols-outlined text-[24px]">explore</span>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-base font-semibold leading-normal line-clamp-1">Find the Hidden Treasure</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium leading-normal">50 Points</p>
+</div>
+</div>
+<div class="shrink-0">
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-600 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
+<div class="h-full w-[27px] rounded-full bg-white shadow-sm transition-all"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<div class="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+<button class="flex items-center gap-2 justify-center flex-1 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span> Edit
+                    </button>
+<div class="w-px bg-slate-200 dark:bg-slate-700 my-2"></div>
+<button class="flex items-center gap-2 justify-center flex-1 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span> Delete
+                    </button>
+</div>
+</div>
+<!-- Mission Card 2 -->
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700/50 flex flex-col gap-3">
+<div class="flex items-center gap-4 justify-between">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 shrink-0 size-12 text-primary">
+<span class="material-symbols-outlined text-[24px]">group</span>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-base font-semibold leading-normal line-clamp-1">Group Pyramid Photo</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium leading-normal">30 Points</p>
+</div>
+</div>
+<div class="shrink-0">
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-600 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
+<div class="h-full w-[27px] rounded-full bg-white shadow-sm transition-all"></div>
+<input checked="" class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<div class="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+<button class="flex items-center gap-2 justify-center flex-1 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span> Edit
+                    </button>
+<div class="w-px bg-slate-200 dark:bg-slate-700 my-2"></div>
+<button class="flex items-center gap-2 justify-center flex-1 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span> Delete
+                    </button>
+</div>
+</div>
+<!-- Mission Card 3 (Inactive) -->
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-700/50 flex flex-col gap-3 opacity-75">
+<div class="flex items-center gap-4 justify-between">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 shrink-0 size-12 text-slate-500">
+<span class="material-symbols-outlined text-[24px]">coffee</span>
+</div>
+<div class="flex flex-col justify-center">
+<p class="text-base font-semibold leading-normal line-clamp-1 text-slate-600 dark:text-slate-300">Coffee Break Trivia</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium leading-normal">10 Points</p>
+</div>
+</div>
+<div class="shrink-0">
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-slate-200 dark:bg-slate-600 p-0.5 has-[:checked]:justify-end has-[:checked]:bg-primary transition-all">
+<div class="h-full w-[27px] rounded-full bg-white shadow-sm transition-all"></div>
+<input class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<div class="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+<button class="flex items-center gap-2 justify-center flex-1 py-2 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span> Edit
+                    </button>
+<div class="w-px bg-slate-200 dark:bg-slate-700 my-2"></div>
+<button class="flex items-center gap-2 justify-center flex-1 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span> Delete
+                    </button>
+</div>
+</div>
+</div>
+<!-- Pending Approvals Section -->
+<div class="px-4 py-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-6 mt-2">
+<h3 class="text-lg font-bold leading-tight">Photo Submissions</h3>
+<span class="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">pending_actions</span>
+                3 Pending
+            </span>
+</div>
+<div class="flex gap-4 px-4 pb-8 overflow-x-auto snap-x hide-scrollbar">
+<!-- Submission 1 -->
+<div class="snap-start shrink-0 w-[240px] flex flex-col gap-3">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800">
+<img alt="Team pyramid photo submission" class="w-full h-full object-cover" data-alt="Team building group pyramid photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2BMnBRh3mfpMBqYW4GuHLtQD2HgNMmewN0vdfBx72Wu9WGdC0KuqWxIoYi7-HfXhbjuksebgDRMiUlVCKfw92mgZmU4qHYDoT2l85_jXX9YMv7mg9iLa4QVTaueZj_QQDGlUSnrk7B56P7RO1x633BFomUK4pZepjJdrDaVCnWnECjF59n1eJkyLGk4hTVEcSYbhBjERfmYrzuvyMbqFEz8NEzd9OOe4AdgM_XtV2TNfWQFkSGjE2GXcL_3RxCG45IoyWRRB61M4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute bottom-3 left-3 text-white">
+<p class="font-bold text-sm">Team Alpha</p>
+<p class="text-xs opacity-90">Group Pyramid Photo</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check</span> Approve
+                    </button>
+<button class="px-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+<!-- Submission 2 -->
+<div class="snap-start shrink-0 w-[240px] flex flex-col gap-3">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800">
+<img alt="Gangneung beach photo submission" class="w-full h-full object-cover" data-alt="Team at the beach in Gangneung" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyXYbSXaugfMGE9PGVL1P27Q4_ZF_pO46gFgkSBknuUQI3hmyCj4jgYyygxYyFe6u64AX8-vsRLNTyJW8rPIjN-6KFqsEKSbx7rMoHd5WGTKWU-6OBCbT1nBSZejBprcA2iTqGwI0DUKRItycgtZbddIz0hBMMT-w8EOIhIkhhKsuugMGIGLeTvwEI9L2D9yoERz02tDQAjRpcN_3QXu6PIIJ9uRxwz8xC78GG4a0OPWJq9o4XMsM7C2k6xpZ_UpO_YTBHlN22zw0"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute bottom-3 left-3 text-white">
+<p class="font-bold text-sm">Team Bravo</p>
+<p class="text-xs opacity-90">Find the Hidden Treasure</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check</span> Approve
+                    </button>
+<button class="px-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

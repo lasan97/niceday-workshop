@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Workshop Home Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-auto min-h-screen w-full max-w-md mx-auto flex-col bg-background-light dark:bg-background-dark shadow-xl overflow-x-hidden pb-20">
+<!-- Header -->
+<div class="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark sticky top-0 z-10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl">sunny</span>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">Gangneung</span>
+<span class="text-sm font-bold">24°C</span>
+</div>
+</div>
+<div class="flex items-center justify-center size-10 rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</div>
+</div>
+<!-- Hero Section -->
+<div class="px-4 pb-4">
+<div class="relative w-full h-64 rounded-xl overflow-hidden flex flex-col justify-end p-6 bg-cover bg-center shadow-lg" data-alt="Beautiful Gangneung beach scenery" style="background-image: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuC0c35mI7WdWsGj2dtb8gsk3rrj8R9I5_NAf0QbpESTYLfZ_mqgZ9PemGU-GEfyYzmgSRP9SGNo5Nz9aCKd4rjniKIGbXxJh3bMmAs7eoVVh8HvjNPmnfMOKHtz--wXXCJijPu8JsQOGyIX_iTnZUFMwH6tMZ7tzomT4qWE39NzDqehVJ3fEhbcLjyZGWx52G6lV1nq7pcymtMCKAKSJxsrDA2vMBKz-P_Agn9zTU1MqHqDnbzyQfaNEI2SMXu77PjbAWrgmJiHiZw');">
+<h1 class="text-white text-3xl font-bold leading-tight mb-2">Nice Day<br/>Gangneung Workshop</h1>
+<p class="text-white/80 text-sm font-medium">Day 1 • Refresh &amp; Reconnect</p>
+<div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Live Now
+                </div>
+</div>
+</div>
+<!-- Current Session -->
+<div class="px-4 py-2">
+<h2 class="text-lg font-bold mb-3">Current Session</h2>
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700 flex gap-4 items-center">
+<div class="w-20 h-20 rounded-lg bg-cover bg-center shrink-0" data-alt="Team building activity outdoors" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB8O2f9JOqY0xPuZ54O3txTSjfOkHH-0oDPrDC5Rjinp1NuIioA20Q5pDp_6PMHJQENkXkoMvIyxV5nnCA-gwU00SrJGMW8t26MPCtz4uSWwMIibj5vK4ed038vy2u0Fd-8uVl_Eknxp8WmrOoPWp1geBfzs_coFzEb-ELYBl1C93p1HxvdGNY05w27h-XySuHz4eNYh_sh1weBCUWK6p43YId04mcakW-ocCUgyr98fxwnAJoOTGAPEqqTRMHWg8KTGEzccWUDrYg');"></div>
+<div class="flex flex-col flex-1">
+<div class="flex items-center gap-2 mb-1">
+<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+<span class="text-xs font-bold text-red-500 uppercase tracking-wide">In Progress</span>
+</div>
+<h3 class="font-bold text-base leading-tight mb-1">Beachside Relay Race</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-2">Gyeongpo Beach</p>
+<div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-2/3 rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Access -->
+<div class="px-4 py-4">
+<h2 class="text-lg font-bold mb-3">Quick Access</h2>
+<div class="grid grid-cols-2 gap-3">
+<a class="bg-primary/10 dark:bg-primary/20 rounded-xl p-4 flex flex-col items-start gap-3 transition-colors hover:bg-primary/20 dark:hover:bg-primary/30" href="#">
+<div class="p-2 bg-primary text-white rounded-lg">
+<span class="material-symbols-outlined">calendar_month</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Today's Schedule</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">3 sessions left</p>
+</div>
+</a>
+<a class="bg-primary/10 dark:bg-primary/20 rounded-xl p-4 flex flex-col items-start gap-3 transition-colors hover:bg-primary/20 dark:hover:bg-primary/30" href="#">
+<div class="p-2 bg-primary text-white rounded-lg">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">My Team</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Team Alpha</p>
+</div>
+</a>
+<a class="bg-primary/10 dark:bg-primary/20 rounded-xl p-4 flex flex-col items-start gap-3 transition-colors hover:bg-primary/20 dark:hover:bg-primary/30 col-span-2" href="#">
+<div class="flex items-center justify-between w-full">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary text-white rounded-lg">
+<span class="material-symbols-outlined">sports_score</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Team Mission</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Collect 5 stamps around Gangneung</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</div>
+</a>
+</div>
+</div>
+<!-- Bottom Navigation Bar -->
+<div class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto flex gap-2 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 pb-6 pt-3 z-50">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-[28px]">home</span>
+<p class="text-[10px] font-bold">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300" href="#">
+<span class="material-symbols-outlined text-[28px]">calendar_today</span>
+<p class="text-[10px] font-medium">Schedule</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300" href="#">
+<span class="material-symbols-outlined text-[28px]">group</span>
+<p class="text-[10px] font-medium">Team</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300" href="#">
+<span class="material-symbols-outlined text-[28px]">flag</span>
+<p class="text-[10px] font-medium">Mission</p>
+</a>
+</div>
+</div>
+</body></html>
