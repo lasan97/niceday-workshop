@@ -3,9 +3,11 @@ spring:
     name: workshop-server
   profiles:
     default: dev
+  flyway:
+    enabled: true
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
