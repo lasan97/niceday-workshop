@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 const items = [
   { href: '/', label: '대시보드' },
@@ -13,6 +14,23 @@ const items = [
 
 export function AdminNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onLogout() {
+    if (submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      router.replace('/login');
+      router.refresh();
+      setSubmitting(false);
+    }
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-center border-t border-slate-200 bg-white/95 backdrop-blur">
@@ -33,6 +51,14 @@ export function AdminNav() {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={onLogout}
+          disabled={submitting}
+          className="px-2 py-1 text-[10px] font-medium text-slate-500 disabled:opacity-50"
+        >
+          로그아웃
+        </button>
       </div>
     </nav>
   );
