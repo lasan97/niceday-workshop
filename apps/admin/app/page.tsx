@@ -1,13 +1,17 @@
+'use client';
+
 import { AppCard } from '@workshop/ui';
+import { AdminScreen } from './components/AdminScreen';
 
 export default function AdminHomePage() {
   return (
-    <main className="mx-auto min-h-screen max-w-4xl p-8">
-      <h1 className="mb-4 text-2xl font-bold">워크샵 운영 대시보드</h1>
-      <AppCard
-        title="관리자 화면 이관 준비 완료"
-        description="docs/admin_* 화면을 단계적으로 Next.js 라우트로 이동하세요."
-      />
-    </main>
+    <AdminScreen title="워크샵 운영 대시보드" subtitle="오늘 운영 현황">
+      <section className="grid gap-4 md:grid-cols-2">
+        <AppCard title="활성 미션" description="12개 진행중" />
+        <AppCard title="예정 세션" description="8개 대기" />
+        <AppCard title="참가자" description="150명 · 체크인 98%" />
+        <AppCard title="공지" description="Broadcast 2건 발송됨" />
+      </section>
+    </AdminScreen>
   );
 }

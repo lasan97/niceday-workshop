@@ -1,13 +1,16 @@
+'use client';
+
 import { AppCard } from '@workshop/ui';
+import { ClientScreen } from './components/ClientScreen';
 
 export default function ClientHomePage() {
   return (
-    <main className="mx-auto min-h-screen max-w-md p-6">
-      <h1 className="mb-4 text-2xl font-bold">워크샵 참가자 홈</h1>
-      <AppCard
-        title="다음 단계"
-        description="docs 화면을 이 앱의 실제 라우트/컴포넌트로 이관하세요."
-      />
-    </main>
+    <ClientScreen title="워크샵 홈" subtitle="Gangneung Workshop Day 1">
+      <div className="space-y-3">
+        <AppCard title="현재 세션" description="Beachside Relay Race · 진행중" />
+        <AppCard title="팀 미션" description="강릉 포인트 스탬프 5개 모으기" />
+        <AppCard title="빠른 이동" description="일정, 미션, 세션 페이지가 라우트로 연결되었습니다." />
+      </div>
+    </ClientScreen>
   );
 }
