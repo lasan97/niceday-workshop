@@ -1,32 +1,47 @@
 'use client';
 
-import { AppCard } from '@workshop/ui';
 import { ClientScreen } from '../components/ClientScreen';
 
 const missions = [
-  { title: '해변 인증샷', status: '진행중' },
-  { title: '지역 음식 먹기', status: '진행중' },
-  { title: '팀 구호 영상', status: '완료' },
+  { title: 'Gyeongpo Beach Snap', point: '+200', done: false },
+  { title: 'Team Slogan Shout', point: '+150', done: true },
+  { title: 'Local Delicacy Hunt', point: '+300', done: false },
 ];
 
 export default function MissionsPage() {
   return (
-    <ClientScreen title="팀 빌딩 미션" subtitle="실시간 랭킹과 미션 제출">
-      <div className="space-y-3">
-        <AppCard title="현재 팀 점수" description="Nice Explorers · 1,200pts · 2위" />
+    <ClientScreen title="Team Building Missions" subtitle="Current Leaderboard">
+      <section className="mb-4 rounded-xl border border-primary/20 bg-primary/5 p-4">
+        <p className="text-sm font-bold text-slate-900">1st Team Awesome · 1450 pts</p>
+        <p className="mt-1 text-sm text-primary">2nd Nice Explorers (YOU) · 1200 pts</p>
+      </section>
+
+      <section className="space-y-3 pb-4">
         {missions.map((mission) => (
-          <AppCard
+          <article
             key={mission.title}
-            title={mission.title}
-            description={`상태: ${mission.status}`}
-            action={
-              <button className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white" type="button">
-                인증 업로드
-              </button>
+            className={
+              mission.done
+                ? 'rounded-xl border border-slate-200 bg-slate-100 p-4 opacity-70'
+                : 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm'
             }
-          />
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">{mission.title}</h3>
+                <p className="mt-1 text-xs text-slate-500">보상 {mission.point}</p>
+              </div>
+              {mission.done ? (
+                <span className="rounded-full bg-emerald-500 px-2 py-1 text-[10px] font-bold text-white">DONE</span>
+              ) : (
+                <button className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white" type="button">
+                  Verify
+                </button>
+              )}
+            </div>
+          </article>
         ))}
-      </div>
+      </section>
     </ClientScreen>
   );
 }

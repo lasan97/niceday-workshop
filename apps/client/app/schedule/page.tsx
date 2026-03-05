@@ -1,25 +1,34 @@
 'use client';
 
-import { AppCard } from '@workshop/ui';
 import { ClientScreen } from '../components/ClientScreen';
 
-const schedule = [
-  { time: '10:00', title: '강릉 도착', place: 'Bus Terminal' },
-  { time: '12:30', title: '점심', place: 'Local Restaurant' },
-  { time: '14:00', title: '팀 컨퍼런스', place: 'Hall A' },
-  { time: '19:00', title: '네트워킹 디너', place: 'Banquet Hall' },
+const timeline = [
+  { time: '10:00 AM', title: 'Arrival at Gangneung', location: 'Bus Terminal', tone: 'bg-primary/10 text-primary' },
+  { time: '12:30 PM', title: 'Lunch', location: 'Local Restaurant', tone: 'bg-orange-100 text-orange-600' },
+  {
+    time: '02:00 PM - 05:00 PM',
+    title: 'Team Conference Part 1',
+    location: 'Conference Hall A',
+    tone: 'bg-purple-100 text-purple-600',
+  },
+  { time: '07:00 PM', title: 'Dinner and Networking', location: 'Hotel Banquet', tone: 'bg-emerald-100 text-emerald-600' },
 ];
 
 export default function SchedulePage() {
   return (
-    <ClientScreen title="워크샵 타임라인" subtitle="Day 1 일정">
-      <div className="space-y-3">
-        {schedule.map((item) => (
-          <AppCard
-            key={`${item.time}-${item.title}`}
-            title={`${item.time} · ${item.title}`}
-            description={item.place}
-          />
+    <ClientScreen title="Workshop Timeline" subtitle="Thursday, Day 1">
+      <div className="space-y-4 pb-4">
+        {timeline.map((item) => (
+          <article key={item.title} className="grid grid-cols-[40px_1fr] gap-3 rounded-xl border border-slate-200 bg-white p-3">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold ${item.tone}`}>
+              ●
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">{item.title}</h3>
+              <p className="mt-1 text-xs text-slate-500">{item.time}</p>
+              <p className="text-xs text-slate-500">{item.location}</p>
+            </div>
+          </article>
         ))}
       </div>
     </ClientScreen>
