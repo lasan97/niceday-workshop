@@ -24,51 +24,88 @@ const fallbackSchedules: ScheduleItemResponse[] = [
   },
 ];
 
-function ScheduleBlock({ day, items }: { day: string; items: ScheduleItemResponse[] }) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-        <h2 className="text-sm font-bold text-primary">{day}</h2>
-        <button className="text-xs font-semibold text-primary" type="button">
-          + 이벤트 추가
-        </button>
-      </div>
-
-      {items.map((item) => (
-        <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-2 gap-2">
-            <input className="rounded-lg border border-slate-300 px-2 py-2 text-xs" defaultValue={item.startsAt} />
-            <input className="rounded-lg border border-slate-300 px-2 py-2 text-xs" defaultValue={item.endsAt} />
-          </div>
-          <input
-            className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
-            defaultValue={item.title}
-          />
-          <input
-            className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
-            defaultValue={item.location}
-          />
-        </article>
-      ))}
-    </section>
-  );
-}
-
 export default function AdminSchedulePage() {
   const [schedules, setSchedules] = useState<ScheduleItemResponse[]>(fallbackSchedules);
+  const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  async function loadSchedules() {
+    try {
+      const data = await workshopApi.getSchedules();
+      setSchedules(data);
+    } catch {
+      setNotice('일정 조회에 실패했습니다.');
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      try {
-        const data = await workshopApi.getSchedules();
-        setSchedules(data);
-      } catch {
-        // API 연결 실패 시 fallback 데이터를 유지한다.
-      }
+    void loadSchedules();
+  }, []);
+
+  async function handleCreate(day: string) {
+    if (submitting) {
+      return;
     }
 
-    void load();
-  }, []);
+    setSubmitting(true);
+    setNotice('');
+    try {
+      await workshopApi.createSchedule({
+        day,
+        startsAt: '09:00',
+        endsAt: '10:00',
+        title: '새 일정',
+        location: '장소 입력',
+      });
+      await loadSchedules();
+      setNotice('일정을 추가했습니다.');
+    } catch {
+      setNotice('일정 추가에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSave(item: ScheduleItemResponse) {
+    if (submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setNotice('');
+    try {
+      await workshopApi.updateSchedule(item.id, {
+        day: item.day,
+        startsAt: item.startsAt,
+        endsAt: item.endsAt,
+        title: item.title,
+        location: item.location,
+      });
+      setNotice('일정을 저장했습니다.');
+    } catch {
+      setNotice('일정 저장에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setNotice('');
+    try {
+      await workshopApi.deleteSchedule(id);
+      await loadSchedules();
+      setNotice('일정을 삭제했습니다.');
+    } catch {
+      setNotice('일정 삭제에 실패했습니다.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const grouped = useMemo(() => {
     return schedules.reduce<Record<string, ScheduleItemResponse[]>>((acc, item) => {
@@ -86,9 +123,94 @@ export default function AdminSchedulePage() {
       subtitle="행사 일정 관리"
       action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">공지 발송</button>}
     >
+      {notice ? <p className="mb-3 text-xs font-semibold text-slate-600">{notice}</p> : null}
       <div className="space-y-6">
         {Object.entries(grouped).map(([day, items]) => (
-          <ScheduleBlock key={day} day={day} items={items} />
+          <section key={day} className="space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+              <h2 className="text-sm font-bold text-primary">{day}</h2>
+              <button
+                type="button"
+                className="text-xs font-semibold text-primary"
+                onClick={() => {
+                  void handleCreate(day);
+                }}
+              >
+                + 이벤트 추가
+              </button>
+            </div>
+
+            {items.map((item) => (
+              <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                    value={item.startsAt}
+                    onChange={(event) => {
+                      setSchedules((prev) =>
+                        prev.map((schedule) =>
+                          schedule.id === item.id ? { ...schedule, startsAt: event.target.value } : schedule,
+                        ),
+                      );
+                    }}
+                  />
+                  <input
+                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                    value={item.endsAt}
+                    onChange={(event) => {
+                      setSchedules((prev) =>
+                        prev.map((schedule) =>
+                          schedule.id === item.id ? { ...schedule, endsAt: event.target.value } : schedule,
+                        ),
+                      );
+                    }}
+                  />
+                </div>
+                <input
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                  value={item.title}
+                  onChange={(event) => {
+                    setSchedules((prev) =>
+                      prev.map((schedule) =>
+                        schedule.id === item.id ? { ...schedule, title: event.target.value } : schedule,
+                      ),
+                    );
+                  }}
+                />
+                <input
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                  value={item.location}
+                  onChange={(event) => {
+                    setSchedules((prev) =>
+                      prev.map((schedule) =>
+                        schedule.id === item.id ? { ...schedule, location: event.target.value } : schedule,
+                      ),
+                    );
+                  }}
+                />
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                    onClick={() => {
+                      void handleSave(item);
+                    }}
+                  >
+                    저장
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600"
+                    onClick={() => {
+                      void handleDelete(item.id);
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
         ))}
       </div>
     </AdminScreen>

@@ -41,9 +41,24 @@ export const workshopApi = {
   getMissions: () => getJson<MissionResponse[]>('/api/v1/workshop/missions'),
   getSessions: () => getJson<SessionResponse[]>('/api/v1/workshop/sessions'),
   getUsers: () => getJson<UserResponse[]>('/api/v1/workshop/users'),
+  createSchedule: (payload: Omit<ScheduleItemResponse, 'id'>) =>
+    sendJson<ScheduleItemResponse>('/api/v1/workshop/schedules', 'POST', payload),
+  updateSchedule: (id: string, payload: Omit<ScheduleItemResponse, 'id'>) =>
+    sendJson<ScheduleItemResponse>(`/api/v1/workshop/schedules/${id}`, 'PATCH', payload),
+  deleteSchedule: (id: string) => sendJson<void>(`/api/v1/workshop/schedules/${id}`, 'DELETE'),
   createMission: (payload: Omit<MissionResponse, 'id'>) =>
     sendJson<MissionResponse>('/api/v1/workshop/missions', 'POST', payload),
   updateMission: (id: string, payload: Omit<MissionResponse, 'id'>) =>
     sendJson<MissionResponse>(`/api/v1/workshop/missions/${id}`, 'PATCH', payload),
   deleteMission: (id: string) => sendJson<void>(`/api/v1/workshop/missions/${id}`, 'DELETE'),
+  createSession: (payload: Omit<SessionResponse, 'id'>) =>
+    sendJson<SessionResponse>('/api/v1/workshop/sessions', 'POST', payload),
+  updateSession: (id: string, payload: Omit<SessionResponse, 'id'>) =>
+    sendJson<SessionResponse>(`/api/v1/workshop/sessions/${id}`, 'PATCH', payload),
+  deleteSession: (id: string) => sendJson<void>(`/api/v1/workshop/sessions/${id}`, 'DELETE'),
+  createUser: (payload: Omit<UserResponse, 'id'>) =>
+    sendJson<UserResponse>('/api/v1/workshop/users', 'POST', payload),
+  updateUser: (id: string, payload: Omit<UserResponse, 'id'>) =>
+    sendJson<UserResponse>(`/api/v1/workshop/users/${id}`, 'PATCH', payload),
+  deleteUser: (id: string) => sendJson<void>(`/api/v1/workshop/users/${id}`, 'DELETE'),
 };
