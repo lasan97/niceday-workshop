@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ScheduleItemResponse } from '@workshop/types';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
+import { Toast } from '../components/Toast';
 
 const fallbackSchedules: ScheduleItemResponse[] = [
   {
@@ -24,17 +25,22 @@ const fallbackSchedules: ScheduleItemResponse[] = [
   },
 ];
 
+type ScheduleFieldKey = 'startsAt' | 'endsAt' | 'title' | 'location';
+type ScheduleFieldErrors = Partial<Record<ScheduleFieldKey, string>>;
+type ToastState = { type: 'success' | 'error'; message: string } | null;
+
 export default function AdminSchedulePage() {
   const [schedules, setSchedules] = useState<ScheduleItemResponse[]>(fallbackSchedules);
   const [submitting, setSubmitting] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [toast, setToast] = useState<ToastState>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, ScheduleFieldErrors>>({});
 
   async function loadSchedules() {
     try {
       const data = await workshopApi.getSchedules();
       setSchedules(data);
     } catch {
-      setNotice('일정 조회에 실패했습니다. 로컬 데이터를 표시합니다.');
+      setToast({ type: 'error', message: '일정 조회에 실패했습니다. 로컬 데이터를 표시합니다.' });
     }
   }
 
@@ -42,13 +48,50 @@ export default function AdminSchedulePage() {
     void loadSchedules();
   }, []);
 
+  function clearFieldError(id: string, key: ScheduleFieldKey) {
+    setFieldErrors((prev) => {
+      const row = prev[id];
+      if (!row?.[key]) {
+        return prev;
+      }
+      const nextRow = { ...row };
+      delete nextRow[key];
+      return { ...prev, [id]: nextRow };
+    });
+  }
+
+  function setClientValidationErrors(item: ScheduleItemResponse): boolean {
+    const errors: ScheduleFieldErrors = {};
+    if (!item.startsAt.trim()) {
+      errors.startsAt = '시작 시간을 입력해주세요.';
+    }
+    if (!item.endsAt.trim()) {
+      errors.endsAt = '종료 시간을 입력해주세요.';
+    }
+    if (!item.title.trim()) {
+      errors.title = '제목을 입력해주세요.';
+    }
+    if (!item.location.trim()) {
+      errors.location = '장소를 입력해주세요.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors((prev) => ({ ...prev, [item.id]: errors }));
+      setToast({ type: 'error', message: '입력값을 확인해주세요.' });
+      return true;
+    }
+
+    setFieldErrors((prev) => ({ ...prev, [item.id]: {} }));
+    return false;
+  }
+
   async function handleCreate(day: string) {
     if (submitting) {
       return;
     }
 
     setSubmitting(true);
-    setNotice('');
+    setToast(null);
     try {
       await workshopApi.createSchedule({
         day,
@@ -58,9 +101,12 @@ export default function AdminSchedulePage() {
         location: '장소 입력',
       });
       await loadSchedules();
-      setNotice('일정을 추가했습니다.');
+      setToast({ type: 'success', message: '일정을 추가했습니다.' });
     } catch (error) {
-      setNotice(error instanceof ApiRequestError ? error.message : '일정 추가에 실패했습니다.');
+      setToast({
+        type: 'error',
+        message: error instanceof ApiRequestError ? error.message : '일정 추가에 실패했습니다.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -70,13 +116,12 @@ export default function AdminSchedulePage() {
     if (submitting) {
       return;
     }
-    if (!item.title.trim() || !item.location.trim() || !item.startsAt.trim() || !item.endsAt.trim()) {
-      setNotice('시간, 제목, 장소를 모두 입력해주세요.');
+    if (setClientValidationErrors(item)) {
       return;
     }
 
     setSubmitting(true);
-    setNotice('');
+    setToast(null);
     try {
       await workshopApi.updateSchedule(item.id, {
         day: item.day,
@@ -85,9 +130,15 @@ export default function AdminSchedulePage() {
         title: item.title,
         location: item.location,
       });
-      setNotice('일정을 저장했습니다.');
+      setToast({ type: 'success', message: '일정을 저장했습니다.' });
     } catch (error) {
-      setNotice(error instanceof ApiRequestError ? error.message : '일정 저장에 실패했습니다.');
+      if (error instanceof ApiRequestError) {
+        setFieldErrors((prev) => ({ ...prev, [item.id]: error.fieldErrors as ScheduleFieldErrors }));
+      }
+      setToast({
+        type: 'error',
+        message: error instanceof ApiRequestError ? error.message : '일정 저장에 실패했습니다.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -99,13 +150,16 @@ export default function AdminSchedulePage() {
     }
 
     setSubmitting(true);
-    setNotice('');
+    setToast(null);
     try {
       await workshopApi.deleteSchedule(id);
       await loadSchedules();
-      setNotice('일정을 삭제했습니다.');
+      setToast({ type: 'success', message: '일정을 삭제했습니다.' });
     } catch (error) {
-      setNotice(error instanceof ApiRequestError ? error.message : '일정 삭제에 실패했습니다.');
+      setToast({
+        type: 'error',
+        message: error instanceof ApiRequestError ? error.message : '일정 삭제에 실패했습니다.',
+      });
     } finally {
       setSubmitting(false);
     }
@@ -131,7 +185,7 @@ export default function AdminSchedulePage() {
         </button>
       }
     >
-      {notice ? <p className="mb-3 text-xs font-semibold text-slate-600">{notice}</p> : null}
+      {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
       <div className="space-y-6">
         {Object.entries(grouped).map(([day, items]) => (
           <section key={day} className="space-y-3">
@@ -149,82 +203,105 @@ export default function AdminSchedulePage() {
               </button>
             </div>
 
-            {items.map((item) => (
-              <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="grid grid-cols-2 gap-2">
+            {items.map((item) => {
+              const rowErrors = fieldErrors[item.id] ?? {};
+
+              return (
+                <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className={`rounded-lg border px-2 py-2 text-xs ${
+                        rowErrors.startsAt ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                      }`}
+                      value={item.startsAt}
+                      disabled={submitting}
+                      onChange={(event) => {
+                        clearFieldError(item.id, 'startsAt');
+                        setSchedules((prev) =>
+                          prev.map((schedule) =>
+                            schedule.id === item.id ? { ...schedule, startsAt: event.target.value } : schedule,
+                          ),
+                        );
+                      }}
+                    />
+                    <input
+                      className={`rounded-lg border px-2 py-2 text-xs ${
+                        rowErrors.endsAt ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                      }`}
+                      value={item.endsAt}
+                      disabled={submitting}
+                      onChange={(event) => {
+                        clearFieldError(item.id, 'endsAt');
+                        setSchedules((prev) =>
+                          prev.map((schedule) =>
+                            schedule.id === item.id ? { ...schedule, endsAt: event.target.value } : schedule,
+                          ),
+                        );
+                      }}
+                    />
+                  </div>
+                  {rowErrors.startsAt || rowErrors.endsAt ? (
+                    <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.startsAt ?? rowErrors.endsAt}</p>
+                  ) : null}
                   <input
-                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
-                    value={item.startsAt}
+                    className={`mt-2 w-full rounded-lg border px-2 py-2 text-xs ${
+                      rowErrors.title ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                    }`}
+                    value={item.title}
                     disabled={submitting}
                     onChange={(event) => {
+                      clearFieldError(item.id, 'title');
                       setSchedules((prev) =>
                         prev.map((schedule) =>
-                          schedule.id === item.id ? { ...schedule, startsAt: event.target.value } : schedule,
+                          schedule.id === item.id ? { ...schedule, title: event.target.value } : schedule,
                         ),
                       );
                     }}
                   />
+                  {rowErrors.title ? <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.title}</p> : null}
                   <input
-                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
-                    value={item.endsAt}
+                    className={`mt-2 w-full rounded-lg border px-2 py-2 text-xs ${
+                      rowErrors.location ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                    }`}
+                    value={item.location}
                     disabled={submitting}
                     onChange={(event) => {
+                      clearFieldError(item.id, 'location');
                       setSchedules((prev) =>
                         prev.map((schedule) =>
-                          schedule.id === item.id ? { ...schedule, endsAt: event.target.value } : schedule,
+                          schedule.id === item.id ? { ...schedule, location: event.target.value } : schedule,
                         ),
                       );
                     }}
                   />
-                </div>
-                <input
-                  className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
-                  value={item.title}
-                  disabled={submitting}
-                  onChange={(event) => {
-                    setSchedules((prev) =>
-                      prev.map((schedule) =>
-                        schedule.id === item.id ? { ...schedule, title: event.target.value } : schedule,
-                      ),
-                    );
-                  }}
-                />
-                <input
-                  className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
-                  value={item.location}
-                  disabled={submitting}
-                  onChange={(event) => {
-                    setSchedules((prev) =>
-                      prev.map((schedule) =>
-                        schedule.id === item.id ? { ...schedule, location: event.target.value } : schedule,
-                      ),
-                    );
-                  }}
-                />
-                <div className="mt-3 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
-                    disabled={submitting}
-                    onClick={() => {
-                      void handleSave(item);
-                    }}
-                  >
-                    저장
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600"
-                    disabled={submitting}
-                    onClick={() => {
-                      void handleDelete(item.id);
-                    }}
-                  >
-                    삭제
-                  </button>
-                </div>
-              </article>
-            ))}
+                  {rowErrors.location ? (
+                    <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.location}</p>
+                  ) : null}
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                      disabled={submitting}
+                      onClick={() => {
+                        void handleSave(item);
+                      }}
+                    >
+                      저장
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600"
+                      disabled={submitting}
+                      onClick={() => {
+                        void handleDelete(item.id);
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </section>
         ))}
       </div>
