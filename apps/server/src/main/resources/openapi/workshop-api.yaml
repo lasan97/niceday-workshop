@@ -1,0 +1,121 @@
+openapi: 3.0.3
+info:
+  title: Workshop API
+  version: 0.1.0
+  description: Initial read API contract for client/admin integration.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/workshop/overview:
+    get:
+      summary: Get workshop overview stats
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverviewResponse'
+  /api/v1/workshop/schedules:
+    get:
+      summary: List schedules
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleItemResponse'
+  /api/v1/workshop/missions:
+    get:
+      summary: List missions
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MissionResponse'
+  /api/v1/workshop/sessions:
+    get:
+      summary: List sessions
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SessionResponse'
+  /api/v1/workshop/users:
+    get:
+      summary: List users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+components:
+  schemas:
+    OverviewResponse:
+      type: object
+      properties:
+        activeMissions:
+          type: integer
+        upcomingSessions:
+          type: integer
+        totalUsers:
+          type: integer
+        totalSchedules:
+          type: integer
+        pendingSubmissions:
+          type: integer
+      required: [activeMissions, upcomingSessions, totalUsers, totalSchedules, pendingSubmissions]
+    ScheduleItemResponse:
+      type: object
+      properties:
+        id: { type: string }
+        day: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        title: { type: string }
+        location: { type: string }
+      required: [id, day, startsAt, endsAt, title, location]
+    MissionResponse:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        points: { type: integer }
+        active: { type: boolean }
+        pendingApprovals: { type: integer }
+      required: [id, title, points, active, pendingApprovals]
+    SessionResponse:
+      type: object
+      properties:
+        id: { type: string }
+        team: { type: string }
+        title: { type: string }
+        speaker: { type: string }
+        room: { type: string }
+        liveQa: { type: boolean }
+        pendingQuestions: { type: integer }
+      required: [id, team, title, speaker, room, liveQa, pendingQuestions]
+    UserResponse:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        team: { type: string }
+        department: { type: string }
+        role: { type: string }
+      required: [id, name, team, department, role]

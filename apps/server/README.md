@@ -26,3 +26,13 @@ gradle bootRun --args='--spring.profiles.active=dev'
 - Spring Boot 3.3.x
 - H2 (local)
 - PostgreSQL 16 (dev)
+
+## Read API (v1)
+
+- `GET /api/v1/workshop/overview`
+- `GET /api/v1/workshop/schedules`
+- `GET /api/v1/workshop/missions`
+- `GET /api/v1/workshop/sessions`
+- `GET /api/v1/workshop/users`
+
+OpenAPI 초안: `src/main/resources/openapi/workshop-api.yaml`
