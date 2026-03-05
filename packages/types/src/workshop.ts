@@ -1,42 +1,15 @@
-export type OverviewResponse = {
-  activeMissions: number;
-  upcomingSessions: number;
-  totalUsers: number;
-  totalSchedules: number;
-  pendingSubmissions: number;
-};
+import type { components } from './generated/workshop-api';
 
-export type ScheduleItemResponse = {
-  id: string;
-  day: string;
-  startsAt: string;
-  endsAt: string;
-  title: string;
-  location: string;
-};
+export type OverviewResponse = components['schemas']['OverviewResponse'];
+export type ScheduleItemResponse = components['schemas']['ScheduleItemResponse'];
+export type MissionResponse = components['schemas']['MissionResponse'];
+export type SessionResponse = components['schemas']['SessionResponse'];
+export type UserResponse = components['schemas']['UserResponse'];
 
-export type MissionResponse = {
-  id: string;
-  title: string;
-  points: number;
-  active: boolean;
-  pendingApprovals: number;
-};
-
-export type SessionResponse = {
-  id: string;
-  team: string;
-  title: string;
-  speaker: string;
-  room: string;
-  liveQa: boolean;
-  pendingQuestions: number;
-};
-
-export type UserResponse = {
-  id: string;
-  name: string;
-  team: string;
-  department: string;
-  role: string;
-};
+export type ScheduleUpsertRequest = components['schemas']['ScheduleUpsertRequest'];
+export type MissionUpsertRequest = components['schemas']['MissionUpsertRequest'];
+export type SessionUpsertRequest = components['schemas']['SessionUpsertRequest'];
+export type UserUpsertRequest = components['schemas']['UserUpsertRequest'];
+export type AuthLoginRequest = components['schemas']['AuthLoginRequest'];
+export type AuthLoginResponse = components['schemas']['AuthLoginResponse'];
+export type ApiErrorResponse = components['schemas']['ApiErrorResponse'];

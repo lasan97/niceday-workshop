@@ -54,8 +54,19 @@ cd apps/server
 
 ## 기본 계정
 
+기본 로그인 계정은 Flyway 시드(`apps/server/src/main/resources/db/migration/V3__add_auth_accounts.sql`)로 주입됩니다.
+
 - 관리자: `admin / admin1234`
 - 참가자: `user01 / user1234`
+
+## OpenAPI 타입 생성
+
+```bash
+pnpm openapi:types
+```
+
+- 원본 스키마: `apps/server/src/main/resources/openapi/workshop-api.yaml`
+- 생성 파일: `packages/types/src/generated/workshop-api.ts`
 
 ## 현재 구현 범위
 

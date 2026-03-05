@@ -4,5 +4,11 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
-  "types": "./src/index.ts"
+  "types": "./src/index.ts",
+  "scripts": {
+    "generate": "openapi-typescript ../../apps/server/src/main/resources/openapi/workshop-api.yaml -o ./src/generated/workshop-api.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
+  }
 }
