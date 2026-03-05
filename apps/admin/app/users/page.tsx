@@ -6,11 +6,28 @@ import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 import { Toast } from '../components/Toast';
 
-type UserRow = UserResponse & { isNew?: boolean };
+type UserRow = UserResponse;
+type UserForm = {
+  id: string | null;
+  username: string;
+  name: string;
+  team: string;
+  workshopTeamId: string | null;
+  role: string;
+};
 
-type UserFieldKey = 'username' | 'name' | 'team' | 'department' | 'role' | 'workshopTeamId';
+type UserFieldKey = 'username' | 'name' | 'team' | 'workshopTeamId' | 'role';
 type UserFieldErrors = Partial<Record<UserFieldKey, string>>;
 type ToastState = { type: 'success' | 'error'; message: string } | null;
+
+const emptyForm: UserForm = {
+  id: null,
+  username: '',
+  name: '',
+  team: '',
+  workshopTeamId: null,
+  role: 'PARTICIPANT',
+};
 
 const fallbackUsers: UserRow[] = [
   {
@@ -20,7 +37,7 @@ const fallbackUsers: UserRow[] = [
     team: '알파팀',
     workshopTeamId: 'team-alpha',
     workshopTeamName: '알파팀',
-    department: '제품팀',
+    department: '',
     role: 'PARTICIPANT',
   },
 ];
@@ -30,20 +47,6 @@ const fallbackTeams: TeamResponse[] = [
   { id: 'team-beta', name: '베타팀' },
 ];
 
-function createDraftUser(): UserRow {
-  return {
-    id: `tmp-${Date.now()}`,
-    username: '',
-    name: '',
-    team: '',
-    workshopTeamId: null,
-    workshopTeamName: null,
-    department: '',
-    role: 'PARTICIPANT',
-    isNew: true,
-  };
-}
-
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserRow[]>(fallbackUsers);
   const [teams, setTeams] = useState<TeamResponse[]>(fallbackTeams);
@@ -51,7 +54,9 @@ export default function AdminUsersPage() {
   const [toast, setToast] = useState<ToastState>(null);
   const [search, setSearch] = useState('');
   const [newTeamName, setNewTeamName] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<Record<string, UserFieldErrors>>({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form, setForm] = useState<UserForm>(emptyForm);
+  const [fieldErrors, setFieldErrors] = useState<UserFieldErrors>({});
 
   async function loadUsers() {
     try {
@@ -75,82 +80,74 @@ export default function AdminUsersPage() {
     void Promise.all([loadUsers(), loadTeams()]);
   }, []);
 
-  function clearFieldError(id: string, key: UserFieldKey) {
-    setFieldErrors((prev) => {
-      const row = prev[id];
-      if (!row?.[key]) {
-        return prev;
-      }
-      const nextRow = { ...row };
-      delete nextRow[key];
-      return { ...prev, [id]: nextRow };
-    });
+  function openCreateModal() {
+    setFieldErrors({});
+    setForm(emptyForm);
+    setModalOpen(true);
   }
 
-  function setClientValidationErrors(user: UserRow): boolean {
-    const errors: UserFieldErrors = {};
-    if (!user.username.trim()) {
-      errors.username = '아이디를 입력해주세요.';
-    }
-    if (!user.name.trim()) {
-      errors.name = '이름을 입력해주세요.';
-    }
-    if (!user.team.trim()) {
-      errors.team = '표기용 팀을 입력해주세요.';
-    }
-    if (!user.department.trim()) {
-      errors.department = '부서를 입력해주세요.';
-    }
-    if (!user.role.trim()) {
-      errors.role = '역할을 선택해주세요.';
-    }
-
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors((prev) => ({ ...prev, [user.id]: errors }));
-      setToast({ type: 'error', message: '입력값을 확인해주세요.' });
-      return true;
-    }
-
-    setFieldErrors((prev) => ({ ...prev, [user.id]: {} }));
-    return false;
-  }
-
-  async function handleAddDraftUser() {
-    setUsers((prev) => [createDraftUser(), ...prev]);
-    setToast(null);
-  }
-
-  async function handleSaveUser(user: UserRow) {
-    if (submitting) {
-      return;
-    }
-    if (setClientValidationErrors(user)) {
-      return;
-    }
-
-    const payload = {
+  function openEditModal(user: UserRow) {
+    setFieldErrors({});
+    setForm({
+      id: user.id,
       username: user.username,
       name: user.name,
       team: user.team,
-      workshopTeamId: user.workshopTeamId,
-      department: user.department,
+      workshopTeamId: user.workshopTeamId ?? null,
       role: user.role,
-    };
+    });
+    setModalOpen(true);
+  }
+
+  function validateForm(): boolean {
+    const errors: UserFieldErrors = {};
+
+    if (!form.username.trim()) {
+      errors.username = '아이디를 입력해주세요.';
+    }
+    if (!form.name.trim()) {
+      errors.name = '이름을 입력해주세요.';
+    }
+    if (!form.team.trim()) {
+      errors.team = '팀을 입력해주세요.';
+    }
+    if (!form.role.trim()) {
+      errors.role = '권한을 선택해주세요.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  }
+
+  async function handleSaveUser() {
+    if (submitting || !validateForm()) {
+      return;
+    }
 
     setSubmitting(true);
     setToast(null);
     try {
-      if (user.isNew) {
+      const payload = {
+        username: form.username,
+        name: form.name,
+        team: form.team,
+        workshopTeamId: form.workshopTeamId,
+        role: form.role,
+      };
+
+      if (form.id) {
+        await workshopApi.updateUser(form.id, payload);
+        setToast({ type: 'success', message: '사용자 정보를 저장했습니다.' });
+      } else {
         await workshopApi.createUser(payload);
         setToast({ type: 'success', message: '사용자를 추가했습니다. 초기 비밀번호는 1111 입니다.' });
-      } else {
-        await workshopApi.updateUser(user.id, payload);
-        setToast({ type: 'success', message: '사용자 정보를 저장했습니다.' });
       }
+
+      setModalOpen(false);
       await loadUsers();
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        setFieldErrors((prev) => ({ ...prev, [user.id]: error.fieldErrors as UserFieldErrors }));
+        setFieldErrors(error.fieldErrors as UserFieldErrors);
       }
       setToast({
         type: 'error',
@@ -161,20 +158,15 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function handleDeleteUser(user: UserRow) {
+  async function handleDeleteUser(userId: string) {
     if (submitting) {
-      return;
-    }
-
-    if (user.isNew) {
-      setUsers((prev) => prev.filter((item) => item.id !== user.id));
       return;
     }
 
     setSubmitting(true);
     setToast(null);
     try {
-      await workshopApi.deleteUser(user.id);
+      await workshopApi.deleteUser(userId);
       await loadUsers();
       setToast({ type: 'success', message: '사용자를 삭제했습니다.' });
     } catch (error) {
@@ -238,8 +230,7 @@ export default function AdminUsersPage() {
     setToast(null);
     try {
       await workshopApi.updateTeam(team.id, { name: team.name.trim() });
-      await loadTeams();
-      await loadUsers();
+      await Promise.all([loadTeams(), loadUsers()]);
       setToast({ type: 'success', message: '워크샵 팀을 저장했습니다.' });
     } catch (error) {
       setToast({
@@ -276,6 +267,7 @@ export default function AdminUsersPage() {
     if (!search.trim()) {
       return users;
     }
+
     const keyword = search.trim();
     return users.filter((user) => `${user.username}${user.name}${user.team}${user.workshopTeamName ?? ''}`.includes(keyword));
   }, [search, users]);
@@ -283,21 +275,20 @@ export default function AdminUsersPage() {
   return (
     <AdminScreen
       title="사용자 관리"
-      subtitle={`총 ${users.filter((user) => !user.isNew).length}명 참가자`}
+      subtitle={`총 ${users.length}명 사용자`}
       action={
         <button
           type="button"
           className="rounded-full bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
           disabled={submitting}
-          onClick={() => {
-            void handleAddDraftUser();
-          }}
+          onClick={openCreateModal}
         >
           + 사용자
         </button>
       }
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
+
       <div className="space-y-4">
         <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
           <h2 className="text-xs font-bold text-slate-700">워크샵 팀 관리</h2>
@@ -361,7 +352,7 @@ export default function AdminUsersPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
           <input
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            placeholder="아이디/이름/팀으로 검색..."
+            placeholder="아이디/이름/팀 검색"
             value={search}
             disabled={submitting}
             onChange={(event) => setSearch(event.target.value)}
@@ -369,166 +360,172 @@ export default function AdminUsersPage() {
         </div>
 
         <div className="space-y-3">
-          {filteredUsers.map((user) => {
-            const rowErrors = fieldErrors[user.id] ?? {};
-
-            return (
-              <article key={user.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-100 p-4">
-                  <label className="text-[10px] font-semibold text-slate-500">아이디</label>
-                  <input
-                    className={`mt-1 w-full rounded border px-2 py-1 text-xs font-semibold ${
-                      rowErrors.username ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300 text-slate-900'
-                    }`}
-                    value={user.username}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      clearFieldError(user.id, 'username');
-                      setUsers((prev) =>
-                        prev.map((item) => (item.id === user.id ? { ...item, username: event.target.value } : item)),
-                      );
-                    }}
-                  />
-                  {rowErrors.username ? (
-                    <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.username}</p>
-                  ) : null}
-
-                  <label className="mt-2 block text-[10px] font-semibold text-slate-500">이름</label>
-                  <input
-                    className={`mt-1 w-full rounded border px-2 py-1 text-sm font-bold ${
-                      rowErrors.name ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300 text-slate-900'
-                    }`}
-                    value={user.name}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      clearFieldError(user.id, 'name');
-                      setUsers((prev) =>
-                        prev.map((item) => (item.id === user.id ? { ...item, name: event.target.value } : item)),
-                      );
-                    }}
-                  />
-                  {rowErrors.name ? <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.name}</p> : null}
-
-                  <label className="mt-2 block text-[10px] font-semibold text-slate-500">표기용 팀</label>
-                  <input
-                    className={`mt-1 w-full rounded border px-2 py-1 text-xs ${
-                      rowErrors.team ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300 text-slate-500'
-                    }`}
-                    value={user.team}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      clearFieldError(user.id, 'team');
-                      setUsers((prev) =>
-                        prev.map((item) => (item.id === user.id ? { ...item, team: event.target.value } : item)),
-                      );
-                    }}
-                  />
-                  {rowErrors.team ? <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.team}</p> : null}
-
-                  <label className="mt-2 block text-[10px] font-semibold text-slate-500">워크샵 팀</label>
-                  <select
-                    className="mt-1 w-full rounded border border-slate-300 px-2 py-1 text-xs text-slate-500"
-                    value={user.workshopTeamId ?? ''}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      setUsers((prev) =>
-                        prev.map((item) =>
-                          item.id === user.id
-                            ? {
-                                ...item,
-                                workshopTeamId: event.target.value || null,
-                                workshopTeamName: teams.find((team) => team.id === event.target.value)?.name ?? null,
-                              }
-                            : item,
-                        ),
-                      );
-                    }}
-                  >
-                    <option value="">미배정</option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <label className="mt-2 block text-[10px] font-semibold text-slate-500">부서</label>
-                  <input
-                    className={`mt-1 w-full rounded border px-2 py-1 text-xs ${
-                      rowErrors.department ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300 text-slate-500'
-                    }`}
-                    value={user.department}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      clearFieldError(user.id, 'department');
-                      setUsers((prev) =>
-                        prev.map((item) =>
-                          item.id === user.id ? { ...item, department: event.target.value } : item,
-                        ),
-                      );
-                    }}
-                  />
-                  {rowErrors.department ? (
-                    <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.department}</p>
-                  ) : null}
-
-                  <label className="mt-2 block text-[10px] font-semibold text-slate-500">역할</label>
-                  <select
-                    className={`mt-1 w-full rounded border px-2 py-1 text-xs ${
-                      rowErrors.role ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300 text-slate-500'
-                    }`}
-                    value={user.role}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      clearFieldError(user.id, 'role');
-                      setUsers((prev) =>
-                        prev.map((item) => (item.id === user.id ? { ...item, role: event.target.value } : item)),
-                      );
-                    }}
-                  >
-                    <option value="PARTICIPANT">참가자</option>
-                    <option value="ADMIN">관리자</option>
-                  </select>
-                  {rowErrors.role ? <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.role}</p> : null}
+          {filteredUsers.map((user) => (
+            <article key={user.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">{user.name}</h3>
+                    <p className="mt-1 text-xs text-slate-500">@{user.username}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      팀: {user.team} · 워크샵팀: {user.workshopTeamName ?? '미배정'}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">권한: {user.role === 'ADMIN' ? '관리자' : '참가자'}</p>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-3 gap-2 bg-slate-50 px-4 py-3">
-                  <button
-                    type="button"
-                    className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
-                    disabled={submitting}
-                    onClick={() => {
-                      void handleSaveUser(user);
-                    }}
-                  >
-                    저장
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-md border border-red-200 bg-red-50 py-1 text-[10px] font-semibold text-red-600"
-                    disabled={submitting}
-                    onClick={() => {
-                      void handleDeleteUser(user);
-                    }}
-                  >
-                    삭제
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-md border border-amber-200 bg-amber-50 py-1 text-[10px] font-semibold text-amber-700 disabled:opacity-50"
-                    disabled={submitting || Boolean(user.isNew)}
-                    onClick={() => {
-                      void handleResetPassword(user.id);
-                    }}
-                  >
-                    비번초기화
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+              </div>
+              <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
+                <button
+                  type="button"
+                  className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
+                  disabled={submitting}
+                  onClick={() => openEditModal(user)}
+                >
+                  수정
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-amber-200 bg-amber-50 py-1 text-[10px] font-semibold text-amber-700 disabled:opacity-50"
+                  disabled={submitting}
+                  onClick={() => {
+                    void handleResetPassword(user.id);
+                  }}
+                >
+                  비번초기화
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-red-200 bg-red-50 py-1 text-[10px] font-semibold text-red-600"
+                  disabled={submitting}
+                  onClick={() => {
+                    void handleDeleteUser(user.id);
+                  }}
+                >
+                  삭제
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
+
+      {modalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-sm font-bold text-slate-900">{form.id ? '사용자 수정' : '사용자 추가'}</h3>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => setModalOpen(false)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <label className="text-[10px] font-semibold text-slate-500">아이디</label>
+              <input
+                className={`w-full rounded border px-2 py-2 text-xs ${
+                  fieldErrors.username ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                }`}
+                value={form.username}
+                disabled={submitting}
+                onChange={(event) => {
+                  setFieldErrors((prev) => ({ ...prev, username: undefined }));
+                  setForm((prev) => ({ ...prev, username: event.target.value }));
+                }}
+              />
+              {fieldErrors.username ? (
+                <p className="text-[10px] font-semibold text-red-600">{fieldErrors.username}</p>
+              ) : null}
+
+              <label className="text-[10px] font-semibold text-slate-500">이름</label>
+              <input
+                className={`w-full rounded border px-2 py-2 text-xs ${
+                  fieldErrors.name ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                }`}
+                value={form.name}
+                disabled={submitting}
+                onChange={(event) => {
+                  setFieldErrors((prev) => ({ ...prev, name: undefined }));
+                  setForm((prev) => ({ ...prev, name: event.target.value }));
+                }}
+              />
+              {fieldErrors.name ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.name}</p> : null}
+
+              <label className="text-[10px] font-semibold text-slate-500">팀</label>
+              <input
+                className={`w-full rounded border px-2 py-2 text-xs ${
+                  fieldErrors.team ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                }`}
+                value={form.team}
+                disabled={submitting}
+                onChange={(event) => {
+                  setFieldErrors((prev) => ({ ...prev, team: undefined }));
+                  setForm((prev) => ({ ...prev, team: event.target.value }));
+                }}
+              />
+              {fieldErrors.team ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.team}</p> : null}
+
+              <label className="text-[10px] font-semibold text-slate-500">워크샵 팀</label>
+              <select
+                className="w-full rounded border border-slate-300 px-2 py-2 text-xs"
+                value={form.workshopTeamId ?? ''}
+                disabled={submitting}
+                onChange={(event) => {
+                  setForm((prev) => ({ ...prev, workshopTeamId: event.target.value || null }));
+                }}
+              >
+                <option value="">미배정</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+
+              <label className="text-[10px] font-semibold text-slate-500">권한</label>
+              <select
+                className={`w-full rounded border px-2 py-2 text-xs ${
+                  fieldErrors.role ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                }`}
+                value={form.role}
+                disabled={submitting}
+                onChange={(event) => {
+                  setFieldErrors((prev) => ({ ...prev, role: undefined }));
+                  setForm((prev) => ({ ...prev, role: event.target.value }));
+                }}
+              >
+                <option value="PARTICIPANT">참가자</option>
+                <option value="ADMIN">관리자</option>
+              </select>
+              {fieldErrors.role ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.role}</p> : null}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 py-2 text-xs font-semibold text-slate-700"
+                onClick={() => setModalOpen(false)}
+                disabled={submitting}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-primary py-2 text-xs font-semibold text-white disabled:opacity-50"
+                onClick={() => {
+                  void handleSaveUser();
+                }}
+                disabled={submitting}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AdminScreen>
   );
 }

@@ -7,7 +7,7 @@ public record UserUpsertRequest(
         @NotBlank String name,
         @NotBlank String team,
         String workshopTeamId,
-        @NotBlank String department,
+        String department,
         @NotBlank String role
 ) {
 }

@@ -614,9 +614,11 @@ components:
         workshopTeamId:
           type: string
           nullable: true
-        department: { type: string }
+        department:
+          type: string
+          nullable: true
         role: { type: string }
-      required: [username, name, team, department, role]
+      required: [username, name, team, role]
     TeamResponse:
       type: object
       properties:

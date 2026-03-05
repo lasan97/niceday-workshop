@@ -222,6 +222,7 @@ public class WorkshopService {
         String id = nextId("usr");
         UserEntity entity = new UserEntity();
         entity.setId(id);
+        entity.setDepartment("");
         applyUserRequest(entity, request);
         UserEntity savedUser = userRepository.save(entity);
 
@@ -326,7 +327,9 @@ public class WorkshopService {
         entity.setName(request.name());
         entity.setTeam(request.team());
         entity.setWorkshopTeamId(request.workshopTeamId());
-        entity.setDepartment(request.department());
+        if (request.department() != null) {
+            entity.setDepartment(request.department());
+        }
         entity.setRole(request.role());
     }
 

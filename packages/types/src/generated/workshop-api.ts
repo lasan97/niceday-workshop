@@ -1046,7 +1046,7 @@ export interface components {
             name: string;
             team: string;
             workshopTeamId?: string | null;
-            department: string;
+            department?: string | null;
             role: string;
         };
         TeamResponse: {
