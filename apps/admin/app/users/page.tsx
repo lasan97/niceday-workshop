@@ -353,10 +353,10 @@ export default function AdminUsersPage() {
                   <p className="mt-2 text-xs text-slate-500">팀: {user.team}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
-                      워크샵팀 {user.workshopTeamName ?? '미배정'}
+                      {user.workshopTeamName ?? '미배정'}
                     </span>
                     <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${roleBadgeClass(user.role)}`}>
-                      권한 {user.role === 'ADMIN' ? '관리자' : '참가자'}
+                      {user.role === 'ADMIN' ? '관리자' : '참가자'}
                     </span>
                   </div>
                 </div>
