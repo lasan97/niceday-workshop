@@ -1,19 +1,34 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import type { MissionResponse } from '@workshop/types';
+import { workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 
-const missionItems = [
-  { title: 'Find the Hidden Treasure', points: 50, active: true },
-  { title: 'Group Pyramid Photo', points: 30, active: true },
-  { title: 'Coffee Break Trivia', points: 10, active: false },
-];
-
-const pending = [
-  { team: 'Team Alpha', mission: 'Group Pyramid Photo' },
-  { team: 'Team Bravo', mission: 'Find the Hidden Treasure' },
+const fallbackMissions: MissionResponse[] = [
+  { id: 'mis-local-1', title: 'Find the Hidden Treasure', points: 50, active: true, pendingApprovals: 1 },
+  { id: 'mis-local-2', title: 'Group Pyramid Photo', points: 30, active: true, pendingApprovals: 2 },
+  { id: 'mis-local-3', title: 'Coffee Break Trivia', points: 10, active: false, pendingApprovals: 0 },
 ];
 
 export default function AdminMissionsPage() {
+  const [missions, setMissions] = useState<MissionResponse[]>(fallbackMissions);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await workshopApi.getMissions();
+        setMissions(data);
+      } catch {
+        // API 연결 실패 시 fallback 데이터를 유지한다.
+      }
+    }
+
+    void load();
+  }, []);
+
+  const pending = missions.reduce((sum, item) => sum + item.pendingApprovals, 0);
+
   return (
     <AdminScreen
       title="Mission Management"
@@ -21,9 +36,9 @@ export default function AdminMissionsPage() {
       action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">+ Add</button>}
     >
       <section className="space-y-3">
-        {missionItems.map((mission) => (
+        {missions.map((mission) => (
           <article
-            key={mission.title}
+            key={mission.id}
             className={
               mission.active
                 ? 'rounded-xl border border-slate-200 bg-white p-4 shadow-sm'
@@ -40,12 +55,6 @@ export default function AdminMissionsPage() {
                 <input defaultChecked={mission.active} type="checkbox" />
               </label>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-              <button className="rounded-md border border-slate-200 py-1.5 text-xs font-semibold">Edit</button>
-              <button className="rounded-md border border-red-200 bg-red-50 py-1.5 text-xs font-semibold text-red-600">
-                Delete
-              </button>
-            </div>
           </article>
         ))}
       </section>
@@ -53,21 +62,9 @@ export default function AdminMissionsPage() {
       <section className="mt-6">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-700">Photo Submissions</h3>
-          <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">3 Pending</span>
-        </div>
-        <div className="space-y-2">
-          {pending.map((item) => (
-            <article key={`${item.team}-${item.mission}`} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-              <p className="text-sm font-bold text-slate-900">{item.team}</p>
-              <p className="text-xs text-slate-500">{item.mission}</p>
-              <div className="mt-2 flex gap-2">
-                <button className="flex-1 rounded-md bg-primary py-1.5 text-xs font-semibold text-white">Approve</button>
-                <button className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                  Reject
-                </button>
-              </div>
-            </article>
-          ))}
+          <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">
+            {pending} Pending
+          </span>
         </div>
       </section>
     </AdminScreen>

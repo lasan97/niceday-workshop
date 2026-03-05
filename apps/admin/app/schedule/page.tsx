@@ -1,15 +1,30 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+import type { ScheduleItemResponse } from '@workshop/types';
+import { workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 
-const day1 = [
-  { start: '09:00', end: '10:30', title: 'Registration and Welcome', location: 'Grand Lobby' },
-  { start: '10:30', end: '12:30', title: 'Keynote: Future Vision', location: 'Main Hall A' },
+const fallbackSchedules: ScheduleItemResponse[] = [
+  {
+    id: 'sch-local-1',
+    day: 'DAY_1',
+    startsAt: '09:00',
+    endsAt: '10:30',
+    title: 'Registration and Welcome',
+    location: 'Grand Lobby',
+  },
+  {
+    id: 'sch-local-2',
+    day: 'DAY_2',
+    startsAt: '09:00',
+    endsAt: '12:00',
+    title: 'Team Building Mission',
+    location: 'Gangneung Beach',
+  },
 ];
 
-const day2 = [{ start: '09:00', end: '12:00', title: 'Team Building Mission', location: 'Gangneung Beach' }];
-
-function ScheduleBlock({ day, items }: { day: string; items: typeof day1 }) {
+function ScheduleBlock({ day, items }: { day: string; items: ScheduleItemResponse[] }) {
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between border-b border-slate-200 pb-2">
@@ -20,10 +35,10 @@ function ScheduleBlock({ day, items }: { day: string; items: typeof day1 }) {
       </div>
 
       {items.map((item) => (
-        <article key={`${day}-${item.title}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="grid grid-cols-2 gap-2">
-            <input className="rounded-lg border border-slate-300 px-2 py-2 text-xs" defaultValue={item.start} />
-            <input className="rounded-lg border border-slate-300 px-2 py-2 text-xs" defaultValue={item.end} />
+            <input className="rounded-lg border border-slate-300 px-2 py-2 text-xs" defaultValue={item.startsAt} />
+            <input className="rounded-lg border border-slate-300 px-2 py-2 text-xs" defaultValue={item.endsAt} />
           </div>
           <input
             className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
@@ -33,11 +48,6 @@ function ScheduleBlock({ day, items }: { day: string; items: typeof day1 }) {
             className="mt-2 w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"
             defaultValue={item.location}
           />
-          <div className="mt-2 flex justify-end">
-            <button className="rounded-md bg-red-50 px-2 py-1 text-xs font-semibold text-red-600" type="button">
-              Delete
-            </button>
-          </div>
         </article>
       ))}
     </section>
@@ -45,6 +55,31 @@ function ScheduleBlock({ day, items }: { day: string; items: typeof day1 }) {
 }
 
 export default function AdminSchedulePage() {
+  const [schedules, setSchedules] = useState<ScheduleItemResponse[]>(fallbackSchedules);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await workshopApi.getSchedules();
+        setSchedules(data);
+      } catch {
+        // API 연결 실패 시 fallback 데이터를 유지한다.
+      }
+    }
+
+    void load();
+  }, []);
+
+  const grouped = useMemo(() => {
+    return schedules.reduce<Record<string, ScheduleItemResponse[]>>((acc, item) => {
+      if (!acc[item.day]) {
+        acc[item.day] = [];
+      }
+      acc[item.day].push(item);
+      return acc;
+    }, {});
+  }, [schedules]);
+
   return (
     <AdminScreen
       title="Schedule Management"
@@ -52,8 +87,9 @@ export default function AdminSchedulePage() {
       action={<button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white">Broadcast</button>}
     >
       <div className="space-y-6">
-        <ScheduleBlock day="Day 1 - Thursday" items={day1} />
-        <ScheduleBlock day="Day 2 - Friday" items={day2} />
+        {Object.entries(grouped).map(([day, items]) => (
+          <ScheduleBlock key={day} day={day} items={items} />
+        ))}
       </div>
     </AdminScreen>
   );
