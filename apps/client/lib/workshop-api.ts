@@ -33,6 +33,7 @@ type OverviewResponse = paths['/api/v1/workshop/overview']['get']['responses'][2
 type ScheduleListResponse = paths['/api/v1/workshop/schedules']['get']['responses'][200]['content']['application/json'];
 type MissionListResponse = paths['/api/v1/workshop/missions']['get']['responses'][200]['content']['application/json'];
 type SessionListResponse = paths['/api/v1/workshop/sessions']['get']['responses'][200]['content']['application/json'];
+type UserListResponse = paths['/api/v1/workshop/users']['get']['responses'][200]['content']['application/json'];
 type SessionQuestionListResponse = paths['/api/v1/workshop/sessions/{id}/questions']['get']['responses'][200]['content']['application/json'];
 type SessionQuestionCreateRequest = paths['/api/v1/workshop/sessions/{id}/questions']['post']['requestBody']['content']['application/json'];
 type SessionQuestionCreateResponse = paths['/api/v1/workshop/sessions/{id}/questions']['post']['responses'][201]['content']['application/json'];
@@ -44,6 +45,7 @@ export const workshopApi = {
   getSchedules: () => getJson<ScheduleListResponse>('/schedules'),
   getMissions: () => getJson<MissionListResponse>('/missions'),
   getSessions: () => getJson<SessionListResponse>('/sessions'),
+  getUsers: () => getJson<UserListResponse>('/users'),
   getSessionQuestions: (sessionId: string) => getJson<SessionQuestionListResponse>(`/sessions/${sessionId}/questions`),
   createSessionQuestion: (sessionId: string, payload: SessionQuestionCreateRequest) =>
     sendJson<SessionQuestionCreateResponse>(`/sessions/${sessionId}/questions`, 'POST', payload),

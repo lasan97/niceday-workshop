@@ -9,6 +9,7 @@ const items = [
   { href: '/schedule', label: '일정' },
   { href: '/missions', label: '미션' },
   { href: '/sessions', label: '세션' },
+  { href: '/users', label: '참가자' },
 ];
 
 export function ClientBottomNav() {
@@ -33,7 +34,7 @@ export function ClientBottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-center border-t border-slate-200 bg-white/95 backdrop-blur">
-      <div className="flex h-16 w-full max-w-md items-center justify-around px-4">
+      <div className="flex h-16 w-full max-w-md items-center justify-around gap-1 px-3">
         {items.map((item) => {
           const active = pathname === item.href;
           return (
