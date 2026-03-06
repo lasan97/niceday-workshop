@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { SessionResponse } from '@workshop/types';
+import { MarkdownText, markdownToPlainText, twoLineClampStyle } from '@workshop/ui';
 import { workshopApi } from '../../lib/workshop-api';
 import { PageSpinner } from '../components/PageSpinner';
 import { ClientScreen } from '../components/ClientScreen';
@@ -18,6 +19,7 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<AuthMeResponse | null>(null);
+  const [detailSession, setDetailSession] = useState<SessionResponse | null>(null);
   const [modalSession, setModalSession] = useState<SessionResponse | null>(null);
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
@@ -143,7 +145,18 @@ export default function SessionsPage() {
               key={session.id}
               className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_6px_24px_rgba(15,23,42,0.06)]"
             >
-              <div className="bg-gradient-to-b from-sky-50/50 to-white p-4">
+              <div
+                role="button"
+                tabIndex={0}
+                className="cursor-pointer bg-gradient-to-b from-sky-50/50 to-white p-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={() => setDetailSession(session)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setDetailSession(session);
+                  }
+                }}
+              >
                 <div className="flex items-center justify-between">
                   <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-bold text-sky-700">
                     {session.team}
@@ -155,19 +168,60 @@ export default function SessionsPage() {
                 <h3 className="mt-3 text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-slate-900">
                   {session.title}
                 </h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">{session.description}</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600" style={twoLineClampStyle}>
+                  {markdownToPlainText(session.description)}
+                </p>
               </div>
               <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3">
                 <button
                   className="w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white"
                   type="button"
-                  onClick={() => void openQaModal(session)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void openQaModal(session);
+                  }}
                 >
                   Q&amp;A
                 </button>
               </div>
             </article>
           ))}
+        </div>
+      ) : null}
+
+      {detailSession ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div>
+                <p className="text-[11px] font-semibold text-slate-400">{detailSession.team}</p>
+                <h3 className="text-base font-bold text-slate-900">{detailSession.title}</h3>
+              </div>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => setDetailSession(null)}
+              >
+                닫기
+              </button>
+            </div>
+            <p className="mt-3 text-xs font-semibold text-slate-500">러닝타임 {detailSession.runningMinutes}분</p>
+            <div className="mt-3 max-h-[60vh] overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <MarkdownText content={detailSession.description} />
+            </div>
+            <div className="mt-4">
+              <button
+                type="button"
+                className="w-full rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white"
+                onClick={() => {
+                  setDetailSession(null);
+                  void openQaModal(detailSession);
+                }}
+              >
+                Q&amp;A 열기
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 

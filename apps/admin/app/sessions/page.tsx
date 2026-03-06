@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { SessionResponse } from '@workshop/types';
+import { MarkdownText, markdownToPlainText, twoLineClampStyle } from '@workshop/ui';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 import { PageSpinner } from '../components/PageSpinner';
@@ -40,12 +41,14 @@ export default function AdminSessionsPage() {
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [detailModalSession, setDetailModalSession] = useState<SessionResponse | null>(null);
   const [qaModalSession, setQaModalSession] = useState<SessionResponse | null>(null);
   const [qaQuestions, setQaQuestions] = useState<SessionQuestion[]>([]);
   const [qaLoading, setQaLoading] = useState(false);
   const [qaSubmitting, setQaSubmitting] = useState(false);
   const [form, setForm] = useState<SessionForm>(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<SessionFieldErrors>({});
+  const [descriptionEditorTab, setDescriptionEditorTab] = useState<'editor' | 'preview'>('editor');
   const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
   const [dragOverSessionId, setDragOverSessionId] = useState<string | null>(null);
   const [pendingLongPressSessionId, setPendingLongPressSessionId] = useState<string | null>(null);
@@ -119,12 +122,14 @@ export default function AdminSessionsPage() {
 
   function openCreateModal() {
     setFieldErrors({});
+    setDescriptionEditorTab('editor');
     setForm({ ...emptyForm, team: userTeams[0] ?? '미배정' });
     setModalOpen(true);
   }
 
   function openEditModal(session: SessionResponse) {
     setFieldErrors({});
+    setDescriptionEditorTab('editor');
     setForm({
       id: session.id,
       team: session.team || '미배정',
@@ -133,6 +138,13 @@ export default function AdminSessionsPage() {
       runningMinutes: session.runningMinutes,
     });
     setModalOpen(true);
+  }
+
+  function openDetailModal(session: SessionResponse) {
+    if (reorderMode) {
+      return;
+    }
+    setDetailModalSession(session);
   }
 
   const sessionTeamOptions = Array.from(
@@ -595,7 +607,21 @@ export default function AdminSessionsPage() {
                   : undefined
               }
             >
-              <div className="p-4">
+              <div
+                role="button"
+                tabIndex={reorderMode ? -1 : 0}
+                className={`${reorderMode ? 'cursor-default' : 'cursor-pointer'} p-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+                onClick={() => openDetailModal(item)}
+                onKeyDown={(event) => {
+                  if (reorderMode) {
+                    return;
+                  }
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openDetailModal(item);
+                  }
+                }}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
                     {item.team}
@@ -617,7 +643,9 @@ export default function AdminSessionsPage() {
                   </span>
                 </div>
                 <h3 className="mt-2 text-base font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-1 text-xs text-slate-500">{item.description}</p>
+                <p className="mt-1 text-xs text-slate-500" style={twoLineClampStyle}>
+                  {markdownToPlainText(item.description)}
+                </p>
                 <p className="mt-2 text-xs font-semibold text-slate-600">러닝타임 {item.runningMinutes}분</p>
               </div>
 
@@ -626,7 +654,10 @@ export default function AdminSessionsPage() {
                   type="button"
                   className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
                   disabled={submitting || reorderMode}
-                  onClick={() => openEditModal(item)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openEditModal(item);
+                  }}
                 >
                   편집
                 </button>
@@ -634,7 +665,8 @@ export default function AdminSessionsPage() {
                   type="button"
                   className="rounded-md border border-sky-200 bg-sky-50 py-1 text-[10px] font-semibold text-sky-700"
                   disabled={submitting || reorderMode}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     void openQaModal(item);
                   }}
                 >
@@ -644,7 +676,8 @@ export default function AdminSessionsPage() {
                   type="button"
                   className="rounded-md border border-red-200 bg-red-50 py-1 text-[10px] font-semibold text-red-600"
                   disabled={submitting || reorderMode}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
                     void handleDeleteSession(item.id);
                   }}
                 >
@@ -708,21 +741,57 @@ export default function AdminSessionsPage() {
               {fieldErrors.title ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.title}</p> : null}
 
               <label className="text-[10px] font-semibold text-slate-500">설명</label>
-              <textarea
-                className={`w-full rounded border px-2 py-2 text-xs ${
-                  fieldErrors.description ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
-                }`}
-                rows={3}
-                value={form.description}
-                disabled={submitting}
-                onChange={(event) => {
-                  setFieldErrors((prev) => ({ ...prev, description: undefined }));
-                  setForm((prev) => ({ ...prev, description: event.target.value }));
-                }}
-              />
               {fieldErrors.description ? (
                 <p className="text-[10px] font-semibold text-red-600">{fieldErrors.description}</p>
               ) : null}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold text-slate-500">설명 편집</p>
+                  <div className="inline-flex rounded-full border border-slate-200 bg-white p-1">
+                    <button
+                      type="button"
+                      className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
+                        descriptionEditorTab === 'editor' ? 'bg-slate-900 text-white' : 'text-slate-500'
+                      }`}
+                      onClick={() => setDescriptionEditorTab('editor')}
+                    >
+                      에디터
+                    </button>
+                    <button
+                      type="button"
+                      className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
+                        descriptionEditorTab === 'preview' ? 'bg-slate-900 text-white' : 'text-slate-500'
+                      }`}
+                      onClick={() => setDescriptionEditorTab('preview')}
+                    >
+                      미리보기
+                    </button>
+                  </div>
+                </div>
+                <p className="mt-1 text-[10px] text-slate-400">툴바 없이 마크다운 문법만 지원합니다.</p>
+                {descriptionEditorTab === 'editor' ? (
+                  <textarea
+                    className={`mt-2 min-h-40 w-full rounded-lg border px-3 py-3 text-xs ${
+                      fieldErrors.description ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300 bg-white'
+                    }`}
+                    placeholder="마크다운으로 설명을 입력하세요."
+                    value={form.description}
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setFieldErrors((prev) => ({ ...prev, description: undefined }));
+                      setForm((prev) => ({ ...prev, description: event.target.value }));
+                    }}
+                  />
+                ) : form.description.trim() ? (
+                  <div className="mt-2 min-h-40 rounded-lg border border-slate-200 bg-white p-3">
+                    <MarkdownText content={form.description} />
+                  </div>
+                ) : (
+                  <div className="mt-2 flex min-h-40 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-3">
+                    <p className="text-xs text-slate-400">설명을 입력하면 여기에 preview가 표시됩니다.</p>
+                  </div>
+                )}
+              </div>
 
               <label className="text-[10px] font-semibold text-slate-500">러닝타임(분)</label>
               <input
@@ -761,6 +830,42 @@ export default function AdminSessionsPage() {
                 disabled={submitting}
               >
                 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {detailModalSession ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+          <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div>
+                <p className="text-[10px] font-semibold text-slate-400">{detailModalSession.team}</p>
+                <h3 className="text-sm font-bold text-slate-900">{detailModalSession.title}</h3>
+              </div>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => setDetailModalSession(null)}
+              >
+                닫기
+              </button>
+            </div>
+            <p className="mt-3 text-[11px] font-semibold text-slate-500">러닝타임 {detailModalSession.runningMinutes}분</p>
+            <div className="mt-3 max-h-[60vh] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <MarkdownText content={detailModalSession.description} />
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700"
+                onClick={() => {
+                  openEditModal(detailModalSession);
+                  setDetailModalSession(null);
+                }}
+              >
+                편집
               </button>
             </div>
           </div>
