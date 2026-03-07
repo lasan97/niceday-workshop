@@ -6,6 +6,8 @@ const WORKSHOP_PROXY_BASE = '/api/workshop';
 
 type OverviewResponse = paths['/api/v1/workshop/overview']['get']['responses'][200]['content']['application/json'];
 type ScheduleListResponse = paths['/api/v1/workshop/schedules']['get']['responses'][200]['content']['application/json'];
+type SchedulePeriodResponse = paths['/api/v1/workshop/schedule-period']['get']['responses'][200]['content']['application/json'];
+type SchedulePeriodUpdateRequest = paths['/api/v1/workshop/schedule-period']['patch']['requestBody']['content']['application/json'];
 type ScheduleCreateRequest = paths['/api/v1/workshop/schedules']['post']['requestBody']['content']['application/json'];
 type ScheduleCreateResponse = paths['/api/v1/workshop/schedules']['post']['responses'][201]['content']['application/json'];
 type ScheduleUpdateRequest = paths['/api/v1/workshop/schedules/{id}']['patch']['requestBody']['content']['application/json'];
@@ -48,6 +50,15 @@ export class ApiRequestError extends Error {
   }
 }
 
+function redirectToLoginOnUnauthorized(status: number) {
+  if (status !== 401 || typeof window === 'undefined') {
+    return;
+  }
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login');
+  }
+}
+
 type ApiErrorBody = {
   message?: string;
   error?: string;
@@ -77,6 +88,7 @@ async function getJson<T>(path: string): Promise<T> {
     cache: 'no-store',
   });
   if (!response.ok) {
+    redirectToLoginOnUnauthorized(response.status);
     const parsed = await parseErrorResponse(response);
     throw new ApiRequestError(response.status, parsed.message, parsed.fieldErrors);
   }
@@ -92,6 +104,7 @@ async function sendJson<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', bo
   });
 
   if (!response.ok) {
+    redirectToLoginOnUnauthorized(response.status);
     const parsed = await parseErrorResponse(response);
     throw new ApiRequestError(response.status, parsed.message, parsed.fieldErrors);
   }
@@ -111,12 +124,15 @@ async function sendJson<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', bo
 export const workshopApi = {
   getOverview: () => getJson<OverviewResponse>('/overview'),
   getSchedules: () => getJson<ScheduleListResponse>('/schedules'),
+  getSchedulePeriod: () => getJson<SchedulePeriodResponse>('/schedule-period'),
   getMissions: () => getJson<MissionListResponse>('/missions'),
   getSessions: () => getJson<SessionListResponse>('/sessions'),
   getUsers: () => getJson<UserListResponse>('/users'),
   getTeams: () => getJson<TeamListResponse>('/teams'),
   createSchedule: (payload: ScheduleCreateRequest) =>
     sendJson<ScheduleCreateResponse>('/schedules', 'POST', payload),
+  updateSchedulePeriod: (payload: SchedulePeriodUpdateRequest) =>
+    sendJson<SchedulePeriodResponse>('/schedule-period', 'PATCH', payload),
   updateSchedule: (id: string, payload: ScheduleUpdateRequest) =>
     sendJson<ScheduleUpdateResponse>(`/schedules/${id}`, 'PATCH', payload),
   deleteSchedule: (id: string) => sendJson<void>(`/schedules/${id}`, 'DELETE'),

@@ -4,11 +4,21 @@ import type {
 
 const WORKSHOP_PROXY_BASE = '/api/workshop';
 
+function redirectToLoginOnUnauthorized(status: number) {
+  if (status !== 401 || typeof window === 'undefined') {
+    return;
+  }
+  if (window.location.pathname !== '/login') {
+    window.location.replace('/login');
+  }
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${WORKSHOP_PROXY_BASE}${path}`, {
     cache: 'no-store',
   });
   if (!response.ok) {
+    redirectToLoginOnUnauthorized(response.status);
     throw new Error(`API request failed: ${response.status}`);
   }
   return (await response.json()) as T;
@@ -24,6 +34,7 @@ async function sendJson<T>(path: string, method: 'POST' | 'PATCH', body: unknown
     cache: 'no-store',
   });
   if (!response.ok) {
+    redirectToLoginOnUnauthorized(response.status);
     throw new Error(`API request failed: ${response.status}`);
   }
   return (await response.json()) as T;
@@ -31,6 +42,7 @@ async function sendJson<T>(path: string, method: 'POST' | 'PATCH', body: unknown
 
 type OverviewResponse = paths['/api/v1/workshop/overview']['get']['responses'][200]['content']['application/json'];
 type ScheduleListResponse = paths['/api/v1/workshop/schedules']['get']['responses'][200]['content']['application/json'];
+type SchedulePeriodResponse = paths['/api/v1/workshop/schedule-period']['get']['responses'][200]['content']['application/json'];
 type MissionListResponse = paths['/api/v1/workshop/missions']['get']['responses'][200]['content']['application/json'];
 type SessionListResponse = paths['/api/v1/workshop/sessions']['get']['responses'][200]['content']['application/json'];
 type UserListResponse = paths['/api/v1/workshop/users']['get']['responses'][200]['content']['application/json'];
@@ -43,6 +55,7 @@ type SessionQuestionAnswerResponse = paths['/api/v1/workshop/sessions/{sessionId
 export const workshopApi = {
   getOverview: () => getJson<OverviewResponse>('/overview'),
   getSchedules: () => getJson<ScheduleListResponse>('/schedules'),
+  getSchedulePeriod: () => getJson<SchedulePeriodResponse>('/schedule-period'),
   getMissions: () => getJson<MissionListResponse>('/missions'),
   getSessions: () => getJson<SessionListResponse>('/sessions'),
   getUsers: () => getJson<UserListResponse>('/users'),

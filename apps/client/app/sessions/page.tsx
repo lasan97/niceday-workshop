@@ -31,6 +31,9 @@ export default function SessionsPage() {
   async function fetchMe(): Promise<AuthMeResponse | null> {
     const meResponse = await fetch('/api/auth/me', { cache: 'no-store' });
     if (!meResponse.ok) {
+      if (meResponse.status === 401 && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.replace('/login');
+      }
       return null;
     }
     return (await meResponse.json()) as AuthMeResponse;
