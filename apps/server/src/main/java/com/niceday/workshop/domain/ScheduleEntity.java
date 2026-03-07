@@ -13,20 +13,17 @@ public class ScheduleEntity {
     @Column(length = 64, nullable = false)
     private String id;
 
-    @Column(name = "day_label", length = 32, nullable = false)
-    private String day;
-
-    @Column(name = "starts_at", length = 16, nullable = false)
+    @Column(name = "starts_at", length = 32, nullable = false)
     private String startsAt;
 
-    @Column(name = "ends_at", length = 16, nullable = false)
+    @Column(name = "ends_at", length = 32, nullable = false)
     private String endsAt;
 
     @Column(length = 120, nullable = false)
     private String title;
 
-    @Column(length = 120, nullable = false)
-    private String location;
+    @Column(length = 400, nullable = false)
+    private String description;
 
     public String getId() {
         return id;
@@ -34,14 +31,6 @@ public class ScheduleEntity {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getDay() {
-        return day;
-    }
-
-    public void setDay(String day) {
-        this.day = day;
     }
 
     public String getStartsAt() {
@@ -68,11 +57,11 @@ public class ScheduleEntity {
         this.title = title;
     }
 
-    public String getLocation() {
-        return location;
+    public String getDescription() {
+        return description;
     }
 
-    public void setLocation(String location) {
-        this.location = location;
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

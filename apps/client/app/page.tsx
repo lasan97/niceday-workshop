@@ -10,16 +10,19 @@ import { PageSpinner } from './components/PageSpinner';
 export default function ClientHomePage() {
   const [overview, setOverview] = useState<OverviewResponse | null>(null);
   const [currentSession, setCurrentSession] = useState<SessionResponse | null>(null);
+  const [periodText, setPeriodText] = useState('워크샵 일정');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [overviewData, sessions] = await Promise.all([
+        const [overviewData, sessions, period] = await Promise.all([
           workshopApi.getOverview(),
           workshopApi.getSessions(),
+          workshopApi.getSchedulePeriod(),
         ]);
         setOverview(overviewData);
+        setPeriodText(`${period.startDate} ~ ${period.endDate}`);
         if (sessions.length > 0) {
           setCurrentSession(sessions[0]);
         }
@@ -39,6 +42,7 @@ export default function ClientHomePage() {
           runningMinutes: 0,
           displayOrder: 0,
         });
+        setPeriodText('워크샵 일정');
       } finally {
         setLoading(false);
       }
@@ -70,7 +74,7 @@ export default function ClientHomePage() {
 
       <section className="px-4 pb-4">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-sky-600 via-primary to-cyan-500 p-6 text-white shadow-lg">
-          <p className="text-xs font-semibold uppercase tracking-wider text-white/80">1일차</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-white/80">{periodText}</p>
           <h1 className="mt-2 text-3xl font-bold leading-tight">나이스데이 강릉 워크샵</h1>
           <p className="mt-2 text-sm text-white/80">다시 연결되고, 더 가까워지는 시간</p>
         </div>

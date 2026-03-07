@@ -4,6 +4,8 @@ import com.niceday.workshop.api.dto.MissionResponse;
 import com.niceday.workshop.api.dto.MissionUpsertRequest;
 import com.niceday.workshop.api.dto.OverviewResponse;
 import com.niceday.workshop.api.dto.ScheduleItemResponse;
+import com.niceday.workshop.api.dto.SchedulePeriodResponse;
+import com.niceday.workshop.api.dto.SchedulePeriodUpdateRequest;
 import com.niceday.workshop.api.dto.ScheduleUpsertRequest;
 import com.niceday.workshop.api.dto.SessionQuestionAnswerRequest;
 import com.niceday.workshop.api.dto.SessionQuestionCreateRequest;
@@ -18,12 +20,14 @@ import com.niceday.workshop.api.dto.UserUpsertRequest;
 import com.niceday.workshop.domain.AuthAccountEntity;
 import com.niceday.workshop.domain.MissionEntity;
 import com.niceday.workshop.domain.ScheduleEntity;
+import com.niceday.workshop.domain.SchedulePeriodEntity;
 import com.niceday.workshop.domain.SessionEntity;
 import com.niceday.workshop.domain.SessionQuestionEntity;
 import com.niceday.workshop.domain.TeamEntity;
 import com.niceday.workshop.domain.UserEntity;
 import com.niceday.workshop.repository.AuthAccountRepository;
 import com.niceday.workshop.repository.MissionRepository;
+import com.niceday.workshop.repository.SchedulePeriodRepository;
 import com.niceday.workshop.repository.ScheduleRepository;
 import com.niceday.workshop.repository.SessionQuestionRepository;
 import com.niceday.workshop.repository.SessionRepository;
@@ -37,6 +41,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,8 +51,10 @@ import java.util.stream.Collectors;
 public class WorkshopService {
 
     private static final String DEFAULT_USER_PASSWORD = "1111";
+    private static final String DEFAULT_PERIOD_ID = "default";
 
     private final ScheduleRepository scheduleRepository;
+    private final SchedulePeriodRepository schedulePeriodRepository;
     private final MissionRepository missionRepository;
     private final SessionRepository sessionRepository;
     private final SessionQuestionRepository sessionQuestionRepository;
@@ -55,6 +64,7 @@ public class WorkshopService {
 
     public WorkshopService(
             ScheduleRepository scheduleRepository,
+            SchedulePeriodRepository schedulePeriodRepository,
             MissionRepository missionRepository,
             SessionRepository sessionRepository,
             SessionQuestionRepository sessionQuestionRepository,
@@ -63,6 +73,7 @@ public class WorkshopService {
             AuthAccountRepository authAccountRepository
     ) {
         this.scheduleRepository = scheduleRepository;
+        this.schedulePeriodRepository = schedulePeriodRepository;
         this.missionRepository = missionRepository;
         this.sessionRepository = sessionRepository;
         this.sessionQuestionRepository = sessionQuestionRepository;
@@ -87,7 +98,38 @@ public class WorkshopService {
 
     @Transactional(readOnly = true)
     public List<ScheduleItemResponse> getSchedules() {
-        return scheduleRepository.findAll().stream().map(this::toScheduleResponse).toList();
+        return scheduleRepository.findAll().stream()
+                .sorted((a, b) -> a.getStartsAt().compareTo(b.getStartsAt()))
+                .map(this::toScheduleResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SchedulePeriodResponse getSchedulePeriod() {
+        SchedulePeriodEntity period = getOrCreateSchedulePeriod();
+        return toSchedulePeriodResponse(period);
+    }
+
+    @Transactional
+    public SchedulePeriodResponse updateSchedulePeriod(SchedulePeriodUpdateRequest request) {
+        LocalDate startDate = parseDateOrThrow(request.startDate(), "startDate");
+        LocalDate endDate = parseDateOrThrow(request.endDate(), "endDate");
+
+        if (endDate.isBefore(startDate)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "워크샵 종료일은 시작일보다 빠를 수 없습니다.");
+        }
+
+        for (ScheduleEntity schedule : scheduleRepository.findAll()) {
+            LocalDate scheduleDate = parseDateTimeOrThrow(schedule.getStartsAt(), "startsAt").toLocalDate();
+            if (scheduleDate.isBefore(startDate) || scheduleDate.isAfter(endDate)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기존 일정이 기간 범위를 벗어납니다.");
+            }
+        }
+
+        SchedulePeriodEntity period = getOrCreateSchedulePeriod();
+        period.setStartDate(startDate);
+        period.setEndDate(endDate);
+        return toSchedulePeriodResponse(schedulePeriodRepository.save(period));
     }
 
     @Transactional
@@ -412,11 +454,25 @@ public class WorkshopService {
     }
 
     private void applyScheduleRequest(ScheduleEntity entity, ScheduleUpsertRequest request) {
-        entity.setDay(request.day());
-        entity.setStartsAt(request.startsAt());
-        entity.setEndsAt(request.endsAt());
+        LocalDateTime startsAt = parseDateTimeOrThrow(request.startsAt(), "startsAt");
+        LocalDateTime endsAt = parseDateTimeOrThrow(request.endsAt(), "endsAt");
+
+        if (!startsAt.isBefore(endsAt)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "일정 종료 시각은 시작 시각보다 늦어야 합니다.");
+        }
+
+        SchedulePeriodEntity period = getOrCreateSchedulePeriod();
+        if (startsAt.toLocalDate().isBefore(period.getStartDate()) || startsAt.toLocalDate().isAfter(period.getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "일정 시작 날짜가 워크샵 기간을 벗어났습니다.");
+        }
+        if (endsAt.toLocalDate().isBefore(period.getStartDate()) || endsAt.toLocalDate().isAfter(period.getEndDate())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "일정 종료 날짜가 워크샵 기간을 벗어났습니다.");
+        }
+
+        entity.setStartsAt(startsAt.toString());
+        entity.setEndsAt(endsAt.toString());
         entity.setTitle(request.title());
-        entity.setLocation(request.location());
+        entity.setDescription(request.description());
     }
 
     private void applyMissionRequest(MissionEntity entity, MissionUpsertRequest request) {
@@ -464,12 +520,42 @@ public class WorkshopService {
     private ScheduleItemResponse toScheduleResponse(ScheduleEntity entity) {
         return new ScheduleItemResponse(
                 entity.getId(),
-                entity.getDay(),
                 entity.getStartsAt(),
                 entity.getEndsAt(),
                 entity.getTitle(),
-                entity.getLocation()
+                entity.getDescription()
         );
+    }
+
+    private SchedulePeriodResponse toSchedulePeriodResponse(SchedulePeriodEntity entity) {
+        return new SchedulePeriodResponse(entity.getStartDate().toString(), entity.getEndDate().toString());
+    }
+
+    private SchedulePeriodEntity getOrCreateSchedulePeriod() {
+        return schedulePeriodRepository.findById(DEFAULT_PERIOD_ID)
+                .orElseGet(() -> {
+                    SchedulePeriodEntity period = new SchedulePeriodEntity();
+                    period.setId(DEFAULT_PERIOD_ID);
+                    period.setStartDate(LocalDate.now());
+                    period.setEndDate(LocalDate.now().plusDays(1));
+                    return schedulePeriodRepository.save(period);
+                });
+    }
+
+    private LocalDateTime parseDateTimeOrThrow(String value, String fieldName) {
+        try {
+            return LocalDateTime.parse(value);
+        } catch (DateTimeParseException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " 값이 올바른 날짜시간 형식이 아닙니다.");
+        }
+    }
+
+    private LocalDate parseDateOrThrow(String value, String fieldName) {
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + " 값이 올바른 날짜 형식이 아닙니다.");
+        }
     }
 
     private MissionResponse toMissionResponse(MissionEntity entity) {

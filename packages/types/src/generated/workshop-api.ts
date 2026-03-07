@@ -167,6 +167,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workshop/schedule-period": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 워크샵 일정 기간 조회 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SchedulePeriodResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** 워크샵 일정 기간 수정 */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SchedulePeriodUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SchedulePeriodResponse"];
+                    };
+                };
+                /** @description BAD REQUEST */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/api/v1/workshop/schedules/{id}": {
         parameters: {
             query?: never;
@@ -1251,18 +1320,28 @@ export interface components {
         };
         ScheduleItemResponse: {
             id: string;
-            day: string;
             startsAt: string;
             endsAt: string;
             title: string;
-            location: string;
+            description: string;
         };
         ScheduleUpsertRequest: {
-            day: string;
             startsAt: string;
             endsAt: string;
             title: string;
-            location: string;
+            description: string;
+        };
+        SchedulePeriodResponse: {
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+        };
+        SchedulePeriodUpdateRequest: {
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
         };
         MissionResponse: {
             id: string;

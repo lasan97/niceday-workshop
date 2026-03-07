@@ -5,6 +5,8 @@ import com.niceday.workshop.api.dto.MissionResponse;
 import com.niceday.workshop.api.dto.MissionUpsertRequest;
 import com.niceday.workshop.api.dto.OverviewResponse;
 import com.niceday.workshop.api.dto.ScheduleItemResponse;
+import com.niceday.workshop.api.dto.SchedulePeriodResponse;
+import com.niceday.workshop.api.dto.SchedulePeriodUpdateRequest;
 import com.niceday.workshop.api.dto.ScheduleUpsertRequest;
 import com.niceday.workshop.api.dto.SessionQuestionAnswerRequest;
 import com.niceday.workshop.api.dto.SessionQuestionCreateRequest;
@@ -50,6 +52,16 @@ public class WorkshopController {
     @GetMapping("/schedules")
     public List<ScheduleItemResponse> getSchedules() {
         return workshopService.getSchedules();
+    }
+
+    @GetMapping("/schedule-period")
+    public SchedulePeriodResponse getSchedulePeriod() {
+        return workshopService.getSchedulePeriod();
+    }
+
+    @PatchMapping("/schedule-period")
+    public SchedulePeriodResponse updateSchedulePeriod(@Valid @RequestBody SchedulePeriodUpdateRequest request) {
+        return workshopService.updateSchedulePeriod(request);
     }
 
     @PostMapping("/schedules")

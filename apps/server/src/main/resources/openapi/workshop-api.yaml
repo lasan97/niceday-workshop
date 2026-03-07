@@ -77,6 +77,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponse'
+  /api/v1/workshop/schedule-period:
+    get:
+      summary: 워크샵 일정 기간 조회
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulePeriodResponse'
+    patch:
+      summary: 워크샵 일정 기간 수정
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchedulePeriodUpdateRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulePeriodResponse'
+        '400':
+          description: BAD REQUEST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponse'
   /api/v1/workshop/schedules/{id}:
     patch:
       summary: 일정 수정
@@ -685,21 +716,31 @@ components:
       type: object
       properties:
         id: { type: string }
-        day: { type: string }
         startsAt: { type: string }
         endsAt: { type: string }
         title: { type: string }
-        location: { type: string }
-      required: [id, day, startsAt, endsAt, title, location]
+        description: { type: string }
+      required: [id, startsAt, endsAt, title, description]
     ScheduleUpsertRequest:
       type: object
       properties:
-        day: { type: string }
         startsAt: { type: string }
         endsAt: { type: string }
         title: { type: string }
-        location: { type: string }
-      required: [day, startsAt, endsAt, title, location]
+        description: { type: string }
+      required: [startsAt, endsAt, title, description]
+    SchedulePeriodResponse:
+      type: object
+      properties:
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+      required: [startDate, endDate]
+    SchedulePeriodUpdateRequest:
+      type: object
+      properties:
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+      required: [startDate, endDate]
     MissionResponse:
       type: object
       properties:

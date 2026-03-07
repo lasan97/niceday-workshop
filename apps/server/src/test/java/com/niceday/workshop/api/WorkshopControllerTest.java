@@ -97,7 +97,7 @@ class WorkshopControllerTest {
                         mockMvc.perform(post("/api/v1/workshop/schedules")
                                         .contentType(MediaType.APPLICATION_JSON)
                                         .content(objectMapper.writeValueAsString(
-                                                new SchedulePayload("3일차", "13:00", "14:00", "테스트 일정", "테스트 룸"))))
+                                                new SchedulePayload("2026-03-02T13:00", "2026-03-02T14:00", "테스트 일정", "테스트 룸"))))
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.title").value("테스트 일정"))
                                 .andReturn()
@@ -312,7 +312,9 @@ class WorkshopControllerTest {
 
     @Test
     void createScheduleWithBlankTitleReturnsFieldErrors() throws Exception {
-        String invalidBody = objectMapper.writeValueAsString(new SchedulePayload("1일차", "09:00", "10:00", " ", "A홀"));
+        String invalidBody = objectMapper.writeValueAsString(
+                new SchedulePayload("2026-03-01T09:00", "2026-03-01T10:00", " ", "A홀")
+        );
 
         mockMvc.perform(post("/api/v1/workshop/schedules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -325,7 +327,7 @@ class WorkshopControllerTest {
     private record MissionPayload(String title, int points, boolean active, int pendingApprovals) {
     }
 
-    private record SchedulePayload(String day, String startsAt, String endsAt, String title, String location) {
+    private record SchedulePayload(String startsAt, String endsAt, String title, String description) {
     }
 
     private record SessionPayload(

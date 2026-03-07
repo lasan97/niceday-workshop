@@ -2,26 +2,106 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ScheduleItemResponse } from '@workshop/types';
+import { MarkdownText, markdownToPlainText, twoLineClampStyle } from '@workshop/ui';
 import { ApiRequestError, workshopApi } from '../../lib/workshop-api';
 import { AdminScreen } from '../components/AdminScreen';
 import { PageSpinner } from '../components/PageSpinner';
 import { Toast } from '../components/Toast';
 
-type ScheduleFieldKey = 'startsAt' | 'endsAt' | 'title' | 'location';
+type ScheduleFieldKey = 'date' | 'startsAt' | 'endsAt' | 'title' | 'description';
 type ScheduleFieldErrors = Partial<Record<ScheduleFieldKey, string>>;
 type ToastState = { type: 'success' | 'error'; message: string } | null;
+type SchedulePeriod = { startDate: string; endDate: string };
+type ScheduleForm = {
+  id: string | null;
+  date: string;
+  startsAt: string;
+  endsAt: string;
+  title: string;
+  description: string;
+};
+
+const emptyForm: ScheduleForm = {
+  id: null,
+  date: '',
+  startsAt: '09:00',
+  endsAt: '10:00',
+  title: '',
+  description: '',
+};
+
+function extractDate(value: string): string {
+  return value.split('T')[0] ?? '';
+}
+
+function extractTime(value: string): string {
+  const time = value.split('T')[1] ?? '';
+  return time.slice(0, 5);
+}
+
+function toDateTime(date: string, time: string): string {
+  return `${date}T${time}`;
+}
+
+function formatDateLabel(value: string): string {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' }).format(date);
+}
+
+function getPeriodDateOptions(period: SchedulePeriod): string[] {
+  if (!period.startDate || !period.endDate || period.startDate > period.endDate) {
+    return [];
+  }
+
+  const options: string[] = [];
+  let cursor = new Date(`${period.startDate}T00:00:00`);
+  const end = new Date(`${period.endDate}T00:00:00`);
+  while (cursor <= end) {
+    const year = cursor.getFullYear();
+    const month = String(cursor.getMonth() + 1).padStart(2, '0');
+    const day = String(cursor.getDate()).padStart(2, '0');
+    options.push(`${year}-${month}-${day}`);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return options;
+}
 
 export default function AdminSchedulePage() {
   const [schedules, setSchedules] = useState<ScheduleItemResponse[]>([]);
+  const [period, setPeriod] = useState<SchedulePeriod>({ startDate: '', endDate: '' });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, ScheduleFieldErrors>>({});
+  const [periodError, setPeriodError] = useState<string | null>(null);
+  const [periodEditing, setPeriodEditing] = useState(false);
+  const [periodDraft, setPeriodDraft] = useState<SchedulePeriod>({ startDate: '', endDate: '' });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [detailModalSchedule, setDetailModalSchedule] = useState<ScheduleItemResponse | null>(null);
+  const [form, setForm] = useState<ScheduleForm>(emptyForm);
+  const [fieldErrors, setFieldErrors] = useState<ScheduleFieldErrors>({});
+  const [descriptionEditorTab, setDescriptionEditorTab] = useState<'editor' | 'preview'>('editor');
+
+  const periodDateOptions = useMemo(() => getPeriodDateOptions(period), [period]);
+
+  const modalDateOptions = useMemo(() => {
+    if (!form.date || periodDateOptions.includes(form.date)) {
+      return periodDateOptions;
+    }
+    return [form.date, ...periodDateOptions];
+  }, [form.date, periodDateOptions]);
 
   async function loadSchedules() {
     try {
-      const data = await workshopApi.getSchedules();
-      setSchedules(data);
+      const [schedulesData, periodData] = await Promise.all([
+        workshopApi.getSchedules(),
+        workshopApi.getSchedulePeriod(),
+      ]);
+      setSchedules(schedulesData);
+      setPeriod(periodData);
+      setPeriodDraft(periodData);
     } catch {
       setToast({ type: 'error', message: '일정 조회에 실패했습니다.' });
     } finally {
@@ -33,92 +113,150 @@ export default function AdminSchedulePage() {
     void loadSchedules();
   }, []);
 
-  function clearFieldError(id: string, key: ScheduleFieldKey) {
-    setFieldErrors((prev) => {
-      const row = prev[id];
-      if (!row?.[key]) {
-        return prev;
-      }
-      const nextRow = { ...row };
-      delete nextRow[key];
-      return { ...prev, [id]: nextRow };
-    });
+  function openCreateModal(date?: string) {
+    if (periodDateOptions.length === 0) {
+      setToast({ type: 'error', message: '먼저 워크샵 기간을 설정해주세요.' });
+      return;
+    }
+
+    const targetDate = date ?? periodDateOptions[0];
+    setFieldErrors({});
+    setDescriptionEditorTab('editor');
+    setForm({ ...emptyForm, date: targetDate, title: '새 일정', description: '상세 설명을 입력하세요.' });
+    setModalOpen(true);
   }
 
-  function setClientValidationErrors(item: ScheduleItemResponse): boolean {
+  function openEditModal(item: ScheduleItemResponse) {
+    setFieldErrors({});
+    setDescriptionEditorTab('editor');
+    setForm({
+      id: item.id,
+      date: extractDate(item.startsAt),
+      startsAt: extractTime(item.startsAt),
+      endsAt: extractTime(item.endsAt),
+      title: item.title,
+      description: item.description,
+    });
+    setModalOpen(true);
+  }
+
+  function openDetailModal(item: ScheduleItemResponse) {
+    setDetailModalSchedule(item);
+  }
+
+  function startPeriodEdit() {
+    setPeriodDraft(period);
+    setPeriodError(null);
+    setPeriodEditing(true);
+  }
+
+  function cancelPeriodEdit() {
+    setPeriodDraft(period);
+    setPeriodError(null);
+    setPeriodEditing(false);
+  }
+
+  function validateForm(): boolean {
     const errors: ScheduleFieldErrors = {};
-    if (!item.startsAt.trim()) {
+
+    if (!form.date) {
+      errors.date = '날짜를 입력해주세요.';
+    }
+    if (!form.startsAt) {
       errors.startsAt = '시작 시간을 입력해주세요.';
     }
-    if (!item.endsAt.trim()) {
+    if (!form.endsAt) {
       errors.endsAt = '종료 시간을 입력해주세요.';
     }
-    if (!item.title.trim()) {
+
+    if (form.date && form.startsAt && form.endsAt) {
+      const start = new Date(`${form.date}T${form.startsAt}:00`);
+      const end = new Date(`${form.date}T${form.endsAt}:00`);
+      if (!(start < end)) {
+        errors.endsAt = '종료 시간은 시작 시간보다 늦어야 합니다.';
+      }
+
+      if (period.startDate && period.endDate && (form.date < period.startDate || form.date > period.endDate)) {
+        errors.date = '워크샵 기간 내 날짜만 선택할 수 있습니다.';
+      }
+    }
+
+    if (!form.title.trim()) {
       errors.title = '제목을 입력해주세요.';
     }
-    if (!item.location.trim()) {
-      errors.location = '장소를 입력해주세요.';
+    if (!form.description.trim()) {
+      errors.description = '설명을 입력해주세요.';
     }
 
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors((prev) => ({ ...prev, [item.id]: errors }));
-      setToast({ type: 'error', message: '입력값을 확인해주세요.' });
-      return true;
-    }
-
-    setFieldErrors((prev) => ({ ...prev, [item.id]: {} }));
-    return false;
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   }
 
-  async function handleCreate(day: string) {
+  async function handleSavePeriod() {
     if (submitting) {
+      return;
+    }
+
+    if (!periodDraft.startDate || !periodDraft.endDate) {
+      setPeriodError('시작일/종료일을 모두 입력해주세요.');
+      setToast({ type: 'error', message: '워크샵 기간을 확인해주세요.' });
+      return;
+    }
+
+    if (periodDraft.startDate > periodDraft.endDate) {
+      setPeriodError('종료일은 시작일보다 빠를 수 없습니다.');
+      setToast({ type: 'error', message: '워크샵 기간을 확인해주세요.' });
       return;
     }
 
     setSubmitting(true);
     setToast(null);
+    setPeriodError(null);
     try {
-      await workshopApi.createSchedule({
-        day,
-        startsAt: '09:00',
-        endsAt: '10:00',
-        title: '새 일정',
-        location: '장소 입력',
-      });
-      await loadSchedules();
-      setToast({ type: 'success', message: '일정을 추가했습니다.' });
+      const updated = await workshopApi.updateSchedulePeriod(periodDraft);
+      setPeriod(updated);
+      setPeriodDraft(updated);
+      setPeriodEditing(false);
+      setToast({ type: 'success', message: '워크샵 기간을 저장했습니다.' });
     } catch (error) {
       setToast({
         type: 'error',
-        message: error instanceof ApiRequestError ? error.message : '일정 추가에 실패했습니다.',
+        message: error instanceof ApiRequestError ? error.message : '워크샵 기간 저장에 실패했습니다.',
       });
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function handleSave(item: ScheduleItemResponse) {
-    if (submitting) {
-      return;
-    }
-    if (setClientValidationErrors(item)) {
+  async function handleSaveSchedule() {
+    if (submitting || !validateForm()) {
       return;
     }
 
     setSubmitting(true);
     setToast(null);
+
     try {
-      await workshopApi.updateSchedule(item.id, {
-        day: item.day,
-        startsAt: item.startsAt,
-        endsAt: item.endsAt,
-        title: item.title,
-        location: item.location,
-      });
-      setToast({ type: 'success', message: '일정을 저장했습니다.' });
+      const payload = {
+        startsAt: toDateTime(form.date, form.startsAt),
+        endsAt: toDateTime(form.date, form.endsAt),
+        title: form.title,
+        description: form.description,
+      };
+
+      if (form.id) {
+        await workshopApi.updateSchedule(form.id, payload);
+        setToast({ type: 'success', message: '일정을 저장했습니다.' });
+      } else {
+        await workshopApi.createSchedule(payload);
+        setToast({ type: 'success', message: '일정을 추가했습니다.' });
+      }
+
+      setModalOpen(false);
+      await loadSchedules();
     } catch (error) {
       if (error instanceof ApiRequestError) {
-        setFieldErrors((prev) => ({ ...prev, [item.id]: error.fieldErrors as ScheduleFieldErrors }));
+        setFieldErrors(error.fieldErrors as ScheduleFieldErrors);
       }
       setToast({
         type: 'error',
@@ -138,6 +276,9 @@ export default function AdminSchedulePage() {
     setToast(null);
     try {
       await workshopApi.deleteSchedule(id);
+      if (detailModalSchedule?.id === id) {
+        setDetailModalSchedule(null);
+      }
       await loadSchedules();
       setToast({ type: 'success', message: '일정을 삭제했습니다.' });
     } catch (error) {
@@ -152,15 +293,16 @@ export default function AdminSchedulePage() {
 
   const grouped = useMemo(() => {
     return schedules.reduce<Record<string, ScheduleItemResponse[]>>((acc, item) => {
-      if (!acc[item.day]) {
-        acc[item.day] = [];
+      const date = extractDate(item.startsAt) || '미분류';
+      if (!acc[date]) {
+        acc[date] = [];
       }
-      acc[item.day].push(item);
+      acc[date].push(item);
       return acc;
     }, {});
   }, [schedules]);
 
-  const dayEntries = Object.entries(grouped);
+  const dayEntries = Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
   const hasSchedules = dayEntries.length > 0;
 
   return (
@@ -168,149 +310,168 @@ export default function AdminSchedulePage() {
       title="일정 관리"
       subtitle="행사 일정 관리"
       action={
-        <button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50" disabled>
-          공지 발송
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-white disabled:opacity-50" disabled>
+            공지 발송
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 disabled:opacity-50"
+            disabled={submitting || loading}
+            onClick={() => openCreateModal()}
+          >
+            + 이벤트 추가
+          </button>
+        </div>
       }
     >
       {toast ? <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} /> : null}
       {loading ? <PageSpinner label="일정 목록을 불러오는 중..." /> : null}
+
       {!loading ? (
-      <div className="space-y-6">
-        {!hasSchedules ? (
-          <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center shadow-sm">
-            <p className="text-sm font-semibold text-slate-700">등록된 일정이 없습니다.</p>
-            <p className="mt-1 text-xs text-slate-500">아래 버튼으로 첫 일정을 추가하세요.</p>
-            <div className="mt-3 flex justify-center gap-2">
-              <button
-                type="button"
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
-                disabled={submitting}
-                onClick={() => {
-                  void handleCreate('1일차');
-                }}
-              >
-                1일차 추가
-              </button>
-              <button
-                type="button"
-                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
-                disabled={submitting}
-                onClick={() => {
-                  void handleCreate('2일차');
-                }}
-              >
-                2일차 추가
-              </button>
+        <div className="space-y-6">
+          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-900">워크샵 전체 기간</h2>
+              {!periodEditing ? (
+                <button
+                  type="button"
+                  className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                  disabled={submitting}
+                  onClick={startPeriodEdit}
+                >
+                  편집
+                </button>
+              ) : null}
             </div>
+
+            {!periodEditing ? (
+              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-700">
+                {period.startDate && period.endDate
+                  ? `${formatDateLabel(period.startDate)} ~ ${formatDateLabel(period.endDate)}`
+                  : '기간이 설정되지 않았습니다.'}
+              </div>
+            ) : (
+              <>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                    value={periodDraft.startDate}
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setPeriodError(null);
+                      setPeriodDraft((prev) => ({ ...prev, startDate: event.target.value }));
+                    }}
+                  />
+                  <input
+                    type="date"
+                    className="rounded-lg border border-slate-300 px-2 py-2 text-xs"
+                    value={periodDraft.endDate}
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setPeriodError(null);
+                      setPeriodDraft((prev) => ({ ...prev, endDate: event.target.value }));
+                    }}
+                  />
+                </div>
+                {periodError ? <p className="mt-1 text-[10px] font-semibold text-red-600">{periodError}</p> : null}
+                <div className="mt-3 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                    disabled={submitting}
+                    onClick={cancelPeriodEdit}
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-md border border-primary bg-primary px-3 py-1 text-xs font-semibold text-white"
+                    disabled={submitting}
+                    onClick={() => {
+                      void handleSavePeriod();
+                    }}
+                  >
+                    기간 저장
+                  </button>
+                </div>
+              </>
+            )}
           </section>
-        ) : null}
-        {dayEntries.map(([day, items]) => (
-          <section key={day} className="space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-              <h2 className="text-sm font-bold text-primary">{day}</h2>
-              <button
-                type="button"
-                className="text-xs font-semibold text-primary"
-                disabled={submitting}
-                onClick={() => {
-                  void handleCreate(day);
-                }}
-              >
-                + 이벤트 추가
-              </button>
-            </div>
 
-            {items.map((item) => {
-              const rowErrors = fieldErrors[item.id] ?? {};
+          {!hasSchedules ? (
+            <section className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center shadow-sm">
+              <p className="text-sm font-semibold text-slate-700">등록된 일정이 없습니다.</p>
+              <p className="mt-1 text-xs text-slate-500">이벤트 추가 버튼으로 일정을 등록하세요.</p>
+            </section>
+          ) : null}
 
-              return (
-                <article key={item.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      className={`rounded-lg border px-2 py-2 text-xs ${
-                        rowErrors.startsAt ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
-                      }`}
-                      value={item.startsAt}
-                      disabled={submitting}
-                      onChange={(event) => {
-                        clearFieldError(item.id, 'startsAt');
-                        setSchedules((prev) =>
-                          prev.map((schedule) =>
-                            schedule.id === item.id ? { ...schedule, startsAt: event.target.value } : schedule,
-                          ),
-                        );
-                      }}
-                    />
-                    <input
-                      className={`rounded-lg border px-2 py-2 text-xs ${
-                        rowErrors.endsAt ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
-                      }`}
-                      value={item.endsAt}
-                      disabled={submitting}
-                      onChange={(event) => {
-                        clearFieldError(item.id, 'endsAt');
-                        setSchedules((prev) =>
-                          prev.map((schedule) =>
-                            schedule.id === item.id ? { ...schedule, endsAt: event.target.value } : schedule,
-                          ),
-                        );
-                      }}
-                    />
+          {dayEntries.map(([date, items]) => (
+            <section key={date} className="space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h2 className="text-sm font-bold text-primary">{formatDateLabel(date)}</h2>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-primary"
+                  disabled={submitting}
+                  onClick={() => openCreateModal(date)}
+                >
+                  + 이벤트 추가
+                </button>
+              </div>
+
+              {items.map((item) => (
+                <article key={item.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="cursor-pointer p-4 outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                    onClick={() => openDetailModal(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        openDetailModal(item);
+                      }
+                    }}
+                  >
+                    <p className="text-xs font-semibold text-slate-500">
+                      {extractTime(item.startsAt)} - {extractTime(item.endsAt)}
+                    </p>
+                    <h3 className="mt-1 text-base font-bold text-slate-900">{item.title}</h3>
+                    <p className="mt-1 text-xs text-slate-600" style={twoLineClampStyle}>
+                      {markdownToPlainText(item.description)}
+                    </p>
                   </div>
-                  {rowErrors.startsAt || rowErrors.endsAt ? (
-                    <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.startsAt ?? rowErrors.endsAt}</p>
-                  ) : null}
-                  <input
-                    className={`mt-2 w-full rounded-lg border px-2 py-2 text-xs ${
-                      rowErrors.title ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
-                    }`}
-                    value={item.title}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      clearFieldError(item.id, 'title');
-                      setSchedules((prev) =>
-                        prev.map((schedule) =>
-                          schedule.id === item.id ? { ...schedule, title: event.target.value } : schedule,
-                        ),
-                      );
-                    }}
-                  />
-                  {rowErrors.title ? <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.title}</p> : null}
-                  <input
-                    className={`mt-2 w-full rounded-lg border px-2 py-2 text-xs ${
-                      rowErrors.location ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
-                    }`}
-                    value={item.location}
-                    disabled={submitting}
-                    onChange={(event) => {
-                      clearFieldError(item.id, 'location');
-                      setSchedules((prev) =>
-                        prev.map((schedule) =>
-                          schedule.id === item.id ? { ...schedule, location: event.target.value } : schedule,
-                        ),
-                      );
-                    }}
-                  />
-                  {rowErrors.location ? (
-                    <p className="mt-1 text-[10px] font-semibold text-red-600">{rowErrors.location}</p>
-                  ) : null}
-                  <div className="mt-3 flex justify-end gap-2">
+                  <div className="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50 px-4 py-3">
                     <button
                       type="button"
-                      className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                      className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
                       disabled={submitting}
-                      onClick={() => {
-                        void handleSave(item);
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openDetailModal(item);
                       }}
                     >
-                      저장
+                      상세
                     </button>
                     <button
                       type="button"
-                      className="rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600"
+                      className="rounded-md border border-slate-200 bg-white py-1 text-[10px] font-semibold"
                       disabled={submitting}
-                      onClick={() => {
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEditModal(item);
+                      }}
+                    >
+                      편집
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md border border-red-200 bg-red-50 py-1 text-[10px] font-semibold text-red-600"
+                      disabled={submitting}
+                      onClick={(event) => {
+                        event.stopPropagation();
                         void handleDelete(item.id);
                       }}
                     >
@@ -318,11 +479,225 @@ export default function AdminSchedulePage() {
                     </button>
                   </div>
                 </article>
-              );
-            })}
-          </section>
-        ))}
-      </div>
+              ))}
+            </section>
+          ))}
+        </div>
+      ) : null}
+
+      {modalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-sm font-bold text-slate-900">{form.id ? '일정 편집' : '일정 추가'}</h3>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => {
+                  setModalOpen(false);
+                  setDescriptionEditorTab('editor');
+                }}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <label className="text-[10px] font-semibold text-slate-500">날짜</label>
+              <select
+                className={`w-full rounded border px-2 py-2 text-xs ${
+                  fieldErrors.date ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                }`}
+                value={form.date}
+                disabled={submitting}
+                onChange={(event) => {
+                  setFieldErrors((prev) => ({ ...prev, date: undefined }));
+                  setForm((prev) => ({ ...prev, date: event.target.value }));
+                }}
+              >
+                {modalDateOptions.map((date) => (
+                  <option key={date} value={date}>
+                    {formatDateLabel(date)}
+                  </option>
+                ))}
+                {periodDateOptions.length === 0 ? <option value="">기간을 먼저 설정해주세요</option> : null}
+              </select>
+              {fieldErrors.date ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.date}</p> : null}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500">시작 시간</label>
+                  <input
+                    type="time"
+                    className={`mt-1 w-full rounded border px-2 py-2 text-xs ${
+                      fieldErrors.startsAt ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                    }`}
+                    value={form.startsAt}
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setFieldErrors((prev) => ({ ...prev, startsAt: undefined }));
+                      setForm((prev) => ({ ...prev, startsAt: event.target.value }));
+                    }}
+                  />
+                  {fieldErrors.startsAt ? (
+                    <p className="mt-1 text-[10px] font-semibold text-red-600">{fieldErrors.startsAt}</p>
+                  ) : null}
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-slate-500">종료 시간</label>
+                  <input
+                    type="time"
+                    className={`mt-1 w-full rounded border px-2 py-2 text-xs ${
+                      fieldErrors.endsAt ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                    }`}
+                    value={form.endsAt}
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setFieldErrors((prev) => ({ ...prev, endsAt: undefined }));
+                      setForm((prev) => ({ ...prev, endsAt: event.target.value }));
+                    }}
+                  />
+                  {fieldErrors.endsAt ? <p className="mt-1 text-[10px] font-semibold text-red-600">{fieldErrors.endsAt}</p> : null}
+                </div>
+              </div>
+
+              <label className="text-[10px] font-semibold text-slate-500">제목</label>
+              <input
+                className={`w-full rounded border px-2 py-2 text-xs ${
+                  fieldErrors.title ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                }`}
+                value={form.title}
+                disabled={submitting}
+                onChange={(event) => {
+                  setFieldErrors((prev) => ({ ...prev, title: undefined }));
+                  setForm((prev) => ({ ...prev, title: event.target.value }));
+                }}
+              />
+              {fieldErrors.title ? <p className="text-[10px] font-semibold text-red-600">{fieldErrors.title}</p> : null}
+
+              <label className="text-[10px] font-semibold text-slate-500">설명</label>
+              {fieldErrors.description ? (
+                <p className="text-[10px] font-semibold text-red-600">{fieldErrors.description}</p>
+              ) : null}
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold text-slate-500">설명 편집</p>
+                  <div className="inline-flex rounded-full border border-slate-200 bg-white p-1">
+                    <button
+                      type="button"
+                      className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
+                        descriptionEditorTab === 'editor' ? 'bg-slate-900 text-white' : 'text-slate-500'
+                      }`}
+                      onClick={() => setDescriptionEditorTab('editor')}
+                    >
+                      에디터
+                    </button>
+                    <button
+                      type="button"
+                      className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
+                        descriptionEditorTab === 'preview' ? 'bg-slate-900 text-white' : 'text-slate-500'
+                      }`}
+                      onClick={() => setDescriptionEditorTab('preview')}
+                    >
+                      미리보기
+                    </button>
+                  </div>
+                </div>
+                {descriptionEditorTab === 'editor' ? (
+                  <textarea
+                    rows={5}
+                    className={`mt-2 w-full rounded border px-2 py-2 text-xs ${
+                      fieldErrors.description ? 'border-red-400 bg-red-50 text-red-700' : 'border-slate-300'
+                    }`}
+                    value={form.description}
+                    disabled={submitting}
+                    onChange={(event) => {
+                      setFieldErrors((prev) => ({ ...prev, description: undefined }));
+                      setForm((prev) => ({ ...prev, description: event.target.value }));
+                    }}
+                  />
+                ) : (
+                  <div className="mt-2 min-h-24 rounded border border-slate-200 bg-white p-3 text-xs text-slate-700">
+                    <MarkdownText content={form.description || '미리보기할 설명이 없습니다.'} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                disabled={submitting}
+                onClick={() => {
+                  setModalOpen(false);
+                  setDescriptionEditorTab('editor');
+                }}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-primary bg-primary px-3 py-1 text-xs font-semibold text-white"
+                disabled={submitting}
+                onClick={() => {
+                  void handleSaveSchedule();
+                }}
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {detailModalSchedule ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-sm font-bold text-slate-900">일정 상세</h3>
+              <button
+                type="button"
+                className="rounded px-2 py-1 text-xs font-semibold text-slate-500"
+                onClick={() => setDetailModalSchedule(null)}
+              >
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              <p className="text-xs font-semibold text-slate-500">
+                {formatDateLabel(extractDate(detailModalSchedule.startsAt))} · {extractTime(detailModalSchedule.startsAt)} -{' '}
+                {extractTime(detailModalSchedule.endsAt)}
+              </p>
+              <h4 className="text-base font-bold text-slate-900">{detailModalSchedule.title}</h4>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <MarkdownText content={detailModalSchedule.description} />
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700"
+                onClick={() => setDetailModalSchedule(null)}
+              >
+                닫기
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-primary bg-primary px-3 py-1 text-xs font-semibold text-white"
+                disabled={submitting}
+                onClick={() => {
+                  openEditModal(detailModalSchedule);
+                  setDetailModalSchedule(null);
+                }}
+              >
+                편집
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </AdminScreen>
   );

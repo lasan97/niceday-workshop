@@ -20,6 +20,7 @@ public class WorkshopAuthInterceptor implements HandlerInterceptor {
     private static final Set<String> PARTICIPANT_ALLOWED_GET_PATHS = Set.of(
             "/api/v1/workshop/overview",
             "/api/v1/workshop/schedules",
+            "/api/v1/workshop/schedule-period",
             "/api/v1/workshop/missions",
             "/api/v1/workshop/sessions"
     );
