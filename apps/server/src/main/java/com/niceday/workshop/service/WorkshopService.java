@@ -120,8 +120,12 @@ public class WorkshopService {
         }
 
         for (ScheduleEntity schedule : scheduleRepository.findAll()) {
-            LocalDate scheduleDate = parseDateTimeOrThrow(schedule.getStartsAt(), "startsAt").toLocalDate();
-            if (scheduleDate.isBefore(startDate) || scheduleDate.isAfter(endDate)) {
+            LocalDate scheduleStartDate = parseDateTimeOrThrow(schedule.getStartsAt(), "startsAt").toLocalDate();
+            LocalDate scheduleEndDate = parseDateTimeOrThrow(schedule.getEndsAt(), "endsAt").toLocalDate();
+            if (scheduleStartDate.isBefore(startDate) || scheduleStartDate.isAfter(endDate)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기존 일정이 기간 범위를 벗어납니다.");
+            }
+            if (scheduleEndDate.isBefore(startDate) || scheduleEndDate.isAfter(endDate)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "기존 일정이 기간 범위를 벗어납니다.");
             }
         }

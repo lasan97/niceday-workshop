@@ -5,7 +5,7 @@ CREATE TABLE workshop_schedule_period (
 );
 
 INSERT INTO workshop_schedule_period (id, start_date, end_date)
-VALUES ('default', DATE '2026-03-01', DATE '2026-03-02');
+VALUES ('default', CURRENT_DATE, CURRENT_DATE + 1);
 
 ALTER TABLE workshop_schedule
     ADD COLUMN starts_at_next VARCHAR(32);
@@ -16,18 +16,18 @@ ALTER TABLE workshop_schedule
 UPDATE workshop_schedule
 SET starts_at_next = (
         CASE
-            WHEN day_label = '2일차' THEN '2026-03-02T'
-            WHEN day_label = '3일차' THEN '2026-03-03T'
-            WHEN day_label = '4일차' THEN '2026-03-04T'
-            ELSE '2026-03-01T'
+            WHEN day_label = '2일차' THEN (SELECT CAST(start_date + 1 AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
+            WHEN day_label = '3일차' THEN (SELECT CAST(start_date + 2 AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
+            WHEN day_label = '4일차' THEN (SELECT CAST(start_date + 3 AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
+            ELSE (SELECT CAST(start_date AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
         END
     ) || starts_at,
     ends_at_next = (
         CASE
-            WHEN day_label = '2일차' THEN '2026-03-02T'
-            WHEN day_label = '3일차' THEN '2026-03-03T'
-            WHEN day_label = '4일차' THEN '2026-03-04T'
-            ELSE '2026-03-01T'
+            WHEN day_label = '2일차' THEN (SELECT CAST(start_date + 1 AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
+            WHEN day_label = '3일차' THEN (SELECT CAST(start_date + 2 AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
+            WHEN day_label = '4일차' THEN (SELECT CAST(start_date + 3 AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
+            ELSE (SELECT CAST(start_date AS VARCHAR) FROM workshop_schedule_period WHERE id = 'default') || 'T'
         END
     ) || ends_at;
 
